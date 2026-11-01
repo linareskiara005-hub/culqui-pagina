@@ -180,6 +180,23 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
 }
 .stat:nth-child(2) {border-bottom:3px solid #ef9845}
 .stat:nth-child(3) {border-bottom:3px solid #9874e8}
+.stats-4 {grid-template-columns:repeat(4,minmax(0,1fr))}
+.stats-4 .stat:nth-child(3) {border-bottom:3px solid #10a99a}
+.stats-4 .stat:nth-child(4) {border-bottom:3px solid #9874e8}
+.day-sums {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;margin:0 0 14px;
+}
+.day-sums div {
+  background:var(--card2);border-radius:12px;padding:12px;
+}
+.day-sums span {
+  display:block;color:var(--muted);font-size:13px;font-weight:700;
+  letter-spacing:.4px;
+}
+.day-sums strong {
+  display:block;margin-top:6px;font-size:20px;font-family:"Manrope",sans-serif;
+}
 
 /* FORMULARIOS */
 .grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
@@ -337,7 +354,9 @@ details[open] > .group-head:after {content:"−"}
   .tab {padding:11px 4px;font-size:11px}
   .tools {justify-content:flex-end}
   .panel {padding:16px;border-radius:17px}
-  .stats {gap:8px}
+  .stats,.stats-4,.day-sums {gap:8px}
+  .stats-4,.day-sums {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .day-sums {grid-template-columns:repeat(3,minmax(0,1fr))}
   .stat {padding:12px}
   .stat strong {font-size:17px}
   .stat span {font-size:10px}
@@ -503,10 +522,11 @@ details[open] > .group-head:after {content:"−"}
     <section id="historyPage" class="hidden section-purple">
       <div class="panel">
         <h2 class="panel-title">Historial por día</h2>
-        <div class="stats">
+        <div class="stats stats-4">
           <div class="stat"><span>DÍAS</span><strong id="historyCount">0</strong></div>
-          <div class="stat"><span>VENTAS HISTÓRICAS</span><strong id="historySales">S/ 0.00</strong></div>
-          <div class="stat"><span>DEPÓSITO HISTÓRICO</span><strong id="historyNet">S/ 0.00</strong></div>
+          <div class="stat"><span>VENTAS</span><strong id="historySales">S/ 0.00</strong></div>
+          <div class="stat"><span>COMISIONES</span><strong id="historyCommission">S/ 0.00</strong></div>
+          <div class="stat"><span>DEPÓSITO</span><strong id="historyNet">S/ 0.00</strong></div>
         </div>
         <div id="historyList"></div>
       </div>
@@ -1071,6 +1091,7 @@ function renderHistory() {
 
   $("historyCount").textContent = keys.length;
   $("historySales").textContent = money(historicalTotals.sales);
+  $("historyCommission").textContent = money(historicalTotals.commission);
   $("historyNet").textContent = money(historicalTotals.net);
 
   keys.forEach(key => {
@@ -1083,23 +1104,21 @@ function renderHistory() {
     const summary = document.createElement("summary");
     summary.innerHTML = `
       <span>${dayTitle(key)}</span>
-      <span class="badge">${money(t.sales)}</span>
+      <span class="badge">Ventas ${money(t.sales)} · Comisión ${money(t.commission)} · Depósito ${money(t.net)}</span>
     `;
     item.appendChild(summary);
 
     const body = document.createElement("div");
     body.className = "history-details";
 
-    const info = document.createElement("div");
-    info.className = "history-info";
-    info.innerHTML = `
-      <strong>${dayTitle(key)}</strong><br>
-      Ventas: ${sales.length}<br>
-      Total vendido: ${money(t.sales)}<br>
-      Comisiones: ${money(t.commission)}<br>
-      Depósito neto: ${money(t.net)}
+    const sums = document.createElement("div");
+    sums.className = "day-sums";
+    sums.innerHTML = `
+      <div><span>VENTAS</span><strong>${money(t.sales)}</strong></div>
+      <div><span>COMISIÓN</span><strong>${money(t.commission)}</strong></div>
+      <div><span>DEPÓSITO</span><strong>${money(t.net)}</strong></div>
     `;
-    body.appendChild(info);
+    body.appendChild(sums);
 
     const heading = document.createElement("h3");
     heading.textContent = "Totales por cliente y referencia";
