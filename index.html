@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101c32">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CULQUI">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>CULQUI | Control de caja</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:#f3f6fb;
+  --card:#ffffff;
+  --card2:#f8fafd;
+  --text:#17243a;
+  --muted:#75839a;
+  --line:#e6ebf2;
+  --accent:#10a99a;
+  --accent2:#087f78;
+  --shadow:0 12px 35px rgba(25,45,75,.07);
+  --navy:#101c32;
+  --green:#10a99a;
+  --orange:#ef9845;
+  --purple:#9874e8;
+}
+body.dark {
+  --bg:#0d1626;
+  --card:#17243a;
+  --card2:#1d2c43;
+  --text:#f0f4fb;
+  --muted:#a1aec1;
+  --line:#2b3a52;
+  --shadow:0 12px 35px rgba(0,0,0,.18);
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"DM Sans",Arial,sans-serif;
+  transition:background .25s,color .25s;
+}
+button,input,select {font:inherit}
+button {cursor:pointer}
+.hidden {display:none!important}
+
+/* ENCABEZADO */
+.hero {
+  background:
+    radial-gradient(circle at 85% 15%,rgba(34,211,190,.22),transparent 30%),
+    linear-gradient(130deg,#101c32,#173c57 65%,#087f78);
+  color:white;
+  padding:28px 18px 35px;
+  border-radius:0 0 30px 30px;
+  position:relative;
+  overflow:hidden;
+}
+.hero-inner {max-width:1080px;margin:auto;text-align:center}
+.logo {
+  font-family:"Manrope",sans-serif;
+  font-size:37px;
+  font-weight:800;
+  letter-spacing:9px;
+  margin:0;
+}
+.logo-sub {
+  font-size:10px;
+  letter-spacing:3px;
+  color:#c7e8e7;
+  margin:7px 0 0;
+}
+.hero-line {
+  width:45px;height:3px;background:#39d6c2;
+  border-radius:10px;margin:16px auto 0;
+}
+
+/* CONTENIDO */
+main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
+.topbar {
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:13px;margin-bottom:20px;
+}
+.tabs {display:flex;gap:9px;flex-wrap:wrap}
+.tab {
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--muted);
+  padding:12px 17px;
+  border-radius:13px;
+  font-weight:700;
+  font-size:13px;
+  box-shadow:0 3px 12px rgba(20,40,70,.03);
+  transition:.2s;
+}
+.tab.active {
+  background:var(--accent);
+  border-color:var(--accent);
+  color:white;
+  box-shadow:0 6px 18px rgba(16,169,154,.25);
+}
+.tab.orange.active {background:var(--orange);border-color:var(--orange)}
+.tab.purple.active {background:var(--purple);border-color:var(--purple)}
+.tools {display:flex;gap:8px}
+.btn {
+  border:0;border-radius:12px;padding:12px 17px;
+  background:var(--accent);color:white;font-weight:700;
+  transition:transform .15s,filter .15s;
+}
+.btn:hover {filter:brightness(1.08);transform:translateY(-1px)}
+.btn.gray {background:#65748b}
+.btn.orange {background:var(--orange)}
+.btn.purple {background:var(--purple)}
+.btn.small {font-size:12px;padding:9px 12px}
+
+/* PANELES */
+.panel {
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:21px;
+  margin-bottom:17px;
+  box-shadow:var(--shadow);
+}
+.panel-title {
+  display:flex;align-items:center;gap:10px;
+  font-family:"Manrope",sans-serif;
+  font-size:17px;font-weight:800;margin:0 0 18px;
+}
+.panel-title:before {
+  content:"";width:5px;height:23px;
+  border-radius:8px;background:var(--accent);
+}
+.section-orange .panel-title:before {background:var(--orange)}
+.section-purple .panel-title:before {background:var(--purple)}
+.subtitle {font-size:12px;color:var(--muted);margin:-10px 0 17px}
+
+/* ESTADÍSTICAS */
+.stats {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:13px;margin-bottom:17px;
+}
+.stat {
+  position:relative;overflow:hidden;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:17px;padding:17px;
+  box-shadow:var(--shadow);
+}
+.stat:after {
+  content:"";position:absolute;right:-20px;top:-25px;
+  width:80px;height:80px;border-radius:50%;
+  background:var(--accent);opacity:.08;
+}
+.stat span {display:block;color:var(--muted);font-size:12px;font-weight:600}
+.stat strong {
+  display:block;font-family:"Manrope",sans-serif;
+  font-size:22px;margin-top:9px;overflow-wrap:anywhere;
+}
+.stat:nth-child(2) {border-bottom:3px solid #ef9845}
+.stat:nth-child(3) {border-bottom:3px solid #9874e8}
+
+/* FORMULARIOS */
+.grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.field {margin-bottom:14px}
+label {
+  display:block;font-size:12px;font-weight:700;
+  color:var(--muted);margin-bottom:7px;
+}
+input,select {
+  width:100%;padding:13px 14px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--card2);
+  color:var(--text);
+  outline:none;
+  transition:border .2s,box-shadow .2s;
+}
+input:focus,select:focus {
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(16,169,154,.12);
+}
+.calculation {
+  background:linear-gradient(110deg,rgba(16,169,154,.10),rgba(16,169,154,.035));
+  border:1px solid rgba(16,169,154,.2);
+  padding:15px;border-radius:13px;
+  color:var(--text);font-size:13px;line-height:1.9;
+}
+.calculation strong {color:var(--accent)}
+.rate-actions {display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* RENGLONES DE CLIENTES */
+.client-lines {display:flex;flex-direction:column}
+.client-line {
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:9px;
+  padding:14px 4px;border-bottom:1px solid var(--line);
+  font-size:13px;
+}
+.client-line:last-child {border-bottom:0}
+.client-name {font-weight:800;min-width:125px}
+.client-data {color:var(--muted)}
+.client-total {font-weight:800;color:var(--accent)}
+
+/* TABLAS Y DETALLES */
+.table-wrap {width:100%;overflow-x:auto}
+table {width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
+th {
+  text-align:left;padding:13px 12px;
+  color:var(--muted);background:var(--card2);
+  font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+}
+td {padding:13px 12px;border-bottom:1px solid var(--line)}
+tr:last-child td {border-bottom:0}
+.sale-group,.history-item {
+  border:1px solid var(--line);
+  border-radius:15px;overflow:hidden;
+  margin:11px 0;background:var(--card);
+}
+.group-head {
+  list-style:none;cursor:pointer;
+  display:flex;justify-content:space-between;
+  align-items:center;gap:10px;flex-wrap:wrap;
+  padding:15px;background:var(--card2);
+}
+.group-head::-webkit-details-marker {display:none}
+.group-head:after {content:"＋";color:var(--accent);font-weight:800}
+details[open] > .group-head:after {content:"−"}
+.group-title {font-weight:800;font-size:13px}
+.group-meta {font-size:12px;color:var(--muted)}
+.group-body {padding:14px}
+.account-line {
+  background:var(--card2);
+  padding:12px 14px;border-radius:11px;
+  font-size:12px;line-height:1.8;margin-bottom:10px;
+}
+.account-line strong {color:var(--accent)}
+.sale-row {
+  padding:13px 4px;border-bottom:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px 12px;font-size:12px;
+}
+.sale-row:last-child {border-bottom:0}
+.sale-row span {color:var(--muted)}
+.sale-row b {color:var(--text)}
+.total-box {
+  padding:13px 14px;border-radius:12px;
+  background:var(--card2);font-size:12px;line-height:1.9;
+  margin-top:12px;
+}
+.total-box strong {color:var(--accent)}
+.history-item {padding:0}
+.history-item > summary {
+  cursor:pointer;list-style:none;padding:16px;
+  display:flex;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;font-size:13px;font-weight:800;
+}
+.history-item > summary::-webkit-details-marker {display:none}
+.history-details {padding:0 15px 15px}
+.history-info {
+  background:var(--card2);padding:13px;border-radius:12px;
+  font-size:12px;line-height:1.9;margin-bottom:14px;
+}
+.empty {
+  text-align:center;color:var(--muted);
+  padding:24px 10px;font-size:13px;
+}
+.badge {
+  display:inline-block;border-radius:30px;
+  padding:5px 9px;background:rgba(16,169,154,.11);
+  color:var(--accent);font-size:10px;font-weight:800;
+}
+.danger {background:#d94c5b}
+
+/* LOGIN */
+#loginScreen {max-width:420px;margin:55px auto;padding:15px}
+.login-card {
+  background:var(--card);border:1px solid var(--line);
+  border-radius:23px;padding:27px;box-shadow:var(--shadow);
+}
+.login-logo {text-align:center;margin-bottom:25px}
+.login-logo h1 {
+  font-family:"Manrope",sans-serif;
+  font-size:34px;letter-spacing:8px;margin:0;
+  color:var(--accent);
+}
+.login-logo p {font-size:10px;letter-spacing:2px;color:var(--muted)}
+.password-wrap {position:relative}
+.password-wrap button {
+  position:absolute;right:5px;top:5px;
+  padding:8px 10px;background:#65748b;
+  color:white;border:0;border-radius:8px;
+}
+.password-wrap input {padding-right:75px}
+.login-error {font-size:12px;color:#e05b68}
+.footer-note {text-align:center;color:var(--muted);font-size:11px;margin-top:22px}
+
+@media(max-width:650px) {
+  main {padding:0 12px 35px;margin-top:17px}
+  .hero {padding:24px 12px 30px}
+  .logo {font-size:32px}
+  .topbar {align-items:stretch}
+  .tabs {display:grid;grid-template-columns:repeat(3,1fr);width:100%;gap:6px}
+  .tab {padding:11px 4px;font-size:11px}
+  .tools {justify-content:flex-end}
+  .panel {padding:16px;border-radius:17px}
+  .stats {gap:8px}
+  .stat {padding:12px}
+  .stat strong {font-size:17px}
+  .stat span {font-size:10px}
+  .grid {grid-template-columns:1fr;gap:0}
+  .client-line {align-items:flex-start;flex-direction:column;gap:5px}
+  .sale-row {grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>CULQUI</h1>
+      <p>CONTROL DE VENTAS, CAJA Y COMISIÓN</p>
+      <div class="hero-line"></div>
+    </div>
+    <form id="loginForm">
+      <div class="field">
+        <label>USUARIO</label>
+        <input id="username" autocomplete="username" placeholder="Ingresa tu usuario" required>
+      </div>
+      <div class="field">
+        <label>CONTRASEÑA</label>
+        <div class="password-wrap">
+          <input id="password" type="password" autocomplete="current-password" placeholder="Ingresa tu contraseña" required>
+          <button type="button" id="showPassword">Ver</button>
+        </div>
+      </div>
+      <p id="loginError" class="login-error"></p>
+      <button class="btn" type="submit" style="width:100%">INGRESAR A CULQUI →</button>
+    </form>
+    <p class="footer-note">Tu control de ventas y caja</p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="hero">
+    <div class="hero-inner">
+      <h1 class="logo">CULQUI</h1>
+      <p class="logo-sub">CONTROL DE VENTAS, CAJA Y COMISIÓN</p>
+      <div class="hero-line"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="topbar">
+      <nav class="tabs">
+        <button class="tab active" data-page="register">✦ Ventas</button>
+        <button class="tab orange" data-page="closing">▣ Cierre</button>
+        <button class="tab purple" data-page="history">◷ Historial</button>
+      </nav>
+      <div class="tools">
+        <button class="btn gray small" id="themeButton">☾ Oscuro</button>
+      </div>
+    </div>
+
+    <!-- VENTAS -->
+    <section id="registerPage">
+      <div class="stats">
+        <div class="stat"><span>VENTAS DE ESTA CAJA</span><strong id="totalSales">S/ 0.00</strong></div>
+        <div class="stat"><span>COMISIONES</span><strong id="totalCommission">S/ 0.00</strong></div>
+        <div class="stat"><span>DEPÓSITO NETO</span><strong id="totalNet">S/ 0.00</strong></div>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Registrar nueva venta</h2>
+        <p class="subtitle">Completa los datos para calcular automáticamente la comisión.</p>
+        <form id="saleForm">
+          <div class="grid">
+            <div class="field">
+              <label>CLIENTE</label>
+              <select id="client" required>
+                <option value="">Seleccionar cliente</option>
+                <option>Benito A</option>
+                <option>Benito B</option>
+                <option>Gambusilandia</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>REFERENCIA</label>
+              <select id="reference" required>
+                <option value="">Primero selecciona cliente</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>TIPO DE COMISIÓN</label>
+              <select id="card"></select>
+              <div class="rate-actions">
+                <button type="button" class="btn gray small" id="addRateButton">＋ Otro tipo</button>
+                <button type="button" class="btn gray small hidden" id="removeRateButton">Quitar este tipo</button>
+              </div>
+              <div id="newRateForm" class="hidden">
+                <div class="field" style="margin-top:10px">
+                  <label>NOMBRE DEL TIPO</label>
+                  <input id="newRateName" placeholder="Ej. Visa débito">
+                </div>
+                <div class="field">
+                  <label>PORCENTAJE (%)</label>
+                  <input id="newRatePercent" type="number" min="0" max="100" step="0.01" placeholder="Ej. 3.50">
+                </div>
+                <button type="button" class="btn gray small" id="saveRateButton">Guardar tipo</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>MONTO DE VENTA (S/)</label>
+              <input id="amount" type="number" min="0.01" step="0.01" placeholder="Ej. 500.00" required>
+            </div>
+          </div>
+          <div class="calculation" id="calculation">
+            Comisión: <strong>S/ 0.00</strong><br>
+            Neto: <strong>S/ 0.00</strong><br>
+            Depósito: <strong>S/ 0.00</strong>
+          </div>
+          <div style="margin-top:17px">
+            <button class="btn" type="submit">＋ GUARDAR VENTA</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Cuentas de clientes</h2>
+        <div id="clientSummary" class="client-lines"></div>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Ventas por cliente y referencia</h2>
+        <p class="subtitle">Toca cada grupo para desplegar sus ventas individuales.</p>
+        <div id="salesList"></div>
+      </div>
+    </section>
+
+    <!-- CIERRE DE CAJA -->
+    <section id="closingPage" class="hidden section-orange">
+      <div class="panel">
+        <h2 class="panel-title">Cierre de caja actual</h2>
+        <p class="subtitle" id="cashInfo"></p>
+        <div class="stats">
+          <div class="stat"><span>TOTAL VENDIDO</span><strong id="closeSales">S/ 0.00</strong></div>
+          <div class="stat"><span>COMISIONES</span><strong id="closeCommission">S/ 0.00</strong></div>
+          <div class="stat"><span>DEPÓSITO NETO</span><strong id="closeNet">S/ 0.00</strong></div>
+        </div>
+
+        <h3 style="font-size:14px;margin:22px 0 10px">Totales por cliente y referencia</h3>
+        <div id="closingBreakdown"></div>
+
+        <div class="field" style="margin-top:20px">
+          <label>OBSERVACIONES DEL CIERRE (OPCIONAL)</label>
+          <input id="observations" placeholder="Escribe alguna observación">
+        </div>
+        <button class="btn orange" id="closeButton">▣ CERRAR CAJA Y ABRIR OTRA</button>
+        <p class="subtitle" style="margin:14px 0 0">Al cerrar, se guarda el detalle completo y comienza una nueva caja vacía.</p>
+      </div>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section id="historyPage" class="hidden section-purple">
+      <div class="panel">
+        <h2 class="panel-title">Historial de cierres</h2>
+        <div class="stats">
+          <div class="stat"><span>CAJAS CERRADAS</span><strong id="historyCount">0</strong></div>
+          <div class="stat"><span>VENTAS HISTÓRICAS</span><strong id="historySales">S/ 0.00</strong></div>
+          <div class="stat"><span>DEPÓSITO HISTÓRICO</span><strong id="historyNet">S/ 0.00</strong></div>
+        </div>
+        <div id="historyList"></div>
+      </div>
+    </section>
+
+    <p class="footer-note">CULQUI · Control de ventas, caja y comisión</p>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+const STORAGE_KEY = "CULQUI_CAJAS_V3";
+const THEME_KEY = "CULQUI_DARK";
+const RATES_KEY = "CULQUI_RATES_V1";
+const DEFAULT_RATES = [
+  {id:"normal",name:"Normal",percent:2.5,locked:true},
+  {id:"diners",name:"Diners / American Express",percent:3.43,locked:true}
+];
+
+const clients = {
+  "Benito A": {account:"7749",cta:"3032",refs:["R1","R2","R3"]},
+  "Benito B": {account:"9309",cta:"1093",refs:["RL","S"]},
+  "Gambusilandia": {account:"7859",cta:"68091",refs:["G1","G2"]}
+};
+
+const $ = id => document.getElementById(id);
+const money = n => "S/ " + Number(n || 0).toFixed(2);
+const now = () => new Date().toISOString();
+
+function dateTime(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("es-PE",{
+    dateStyle:"short",timeStyle:"short"
+  });
+}
+
+function emptyCash() {
+  return {id:Date.now(),openedAt:now(),sales:[]};
+}
+
+function loadData() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && saved.current && Array.isArray(saved.history)) {
+      return saved;
+    }
+  } catch(e) {}
+  return {current:emptyCash(),history:[]};
+}
+
+let data = loadData();
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+}
+
+function totals(sales) {
+  return sales.reduce((t,s) => {
+    t.sales += Number(s.amount || 0);
+    t.commission += Number(s.commission || 0);
+    t.net += Number(s.net ?? s.deposit ?? 0);
+    return t;
+  },{sales:0,commission:0,net:0});
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g,c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
+function accountOf(s) {
+  const info = clients[s.client] || {};
+  return {
+    account:s.account || info.account || "—",
+    cta:s.cta || info.cta || "—"
+  };
+}
+
+function loadRates() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(RATES_KEY));
+    if (Array.isArray(saved)) {
+      const extras = saved.filter(rate =>
+        rate && rate.id && rate.name &&
+        Number.isFinite(Number(rate.percent)) &&
+        !DEFAULT_RATES.some(item => item.id === rate.id)
+      ).map(rate => ({
+        id:String(rate.id),
+        name:String(rate.name).trim().slice(0,40),
+        percent:Math.round(Number(rate.percent) * 100) / 100,
+        locked:false
+      })).filter(rate => rate.name && rate.percent >= 0 && rate.percent <= 100);
+      return DEFAULT_RATES.concat(extras);
+    }
+  } catch(e) {}
+  return DEFAULT_RATES.slice();
+}
+
+let rates = loadRates();
+
+function saveRates() {
+  localStorage.setItem(RATES_KEY,JSON.stringify(rates.filter(rate => !rate.locked)));
+}
+
+function formatPercent(value) {
+  return String(Math.round(Number(value) * 100) / 100);
+}
+
+function selectedRate() {
+  return rates.find(rate => rate.id === $("card").value) || rates[0];
+}
+
+function fillRates(keepId) {
+  const select = $("card");
+  const current = keepId || select.value;
+  select.innerHTML = "";
+  rates.forEach(rate => {
+    const option = document.createElement("option");
+    option.value = rate.id;
+    option.textContent = rate.name + " · " + formatPercent(rate.percent) + "%";
+    select.appendChild(option);
+  });
+  if (rates.some(rate => rate.id === current)) select.value = current;
+  const selected = selectedRate();
+  $("removeRateButton").classList.toggle("hidden",!selected || selected.locked);
+}
+
+function calculate() {
+  const amount = Math.max(0,Number($("amount").value) || 0);
+  const rate = (Number(selectedRate().percent) || 0) / 100;
+  const commission = Math.round(amount * rate * 100) / 100;
+  const net = Math.round((amount - commission) * 100) / 100;
+
+  $("calculation").innerHTML = `
+    Comisión (${formatPercent(rate * 100)}%): <strong>${money(commission)}</strong><br>
+    Neto: <strong>${money(net)}</strong><br>
+    Depósito: <strong>${money(net)}</strong>
+  `;
+}
+
+$("client").addEventListener("change",() => {
+  const client = $("client").value;
+  const refs = clients[client]?.refs || [];
+  $("reference").innerHTML = '<option value="">Seleccionar referencia</option>';
+
+  refs.forEach(ref => {
+    const option = document.createElement("option");
+    option.value = ref;
+    option.textContent = ref;
+    $("reference").appendChild(option);
+  });
+});
+
+$("amount").addEventListener("input",calculate);
+$("card").addEventListener("change",() => {
+  fillRates();
+  calculate();
+});
+
+$("addRateButton").addEventListener("click",() => {
+  $("newRateForm").classList.toggle("hidden");
+  if (!$("newRateForm").classList.contains("hidden")) $("newRateName").focus();
+});
+
+$("saveRateButton").addEventListener("click",() => {
+  const name = $("newRateName").value.trim();
+  const percent = Number($("newRatePercent").value);
+  if (!name || !Number.isFinite(percent) || percent < 0 || percent > 100) {
+    alert("Escribe el nombre y un porcentaje entre 0 y 100.");
+    return;
+  }
+  const id = "r" + Date.now();
+  rates.push({
+    id,
+    name:name.slice(0,40),
+    percent:Math.round(percent * 100) / 100,
+    locked:false
+  });
+  saveRates();
+  fillRates(id);
+  $("newRateName").value = "";
+  $("newRatePercent").value = "";
+  $("newRateForm").classList.add("hidden");
+  calculate();
+});
+
+$("removeRateButton").addEventListener("click",() => {
+  const selected = selectedRate();
+  if (!selected || selected.locked) return;
+  rates = rates.filter(rate => rate.id !== selected.id);
+  saveRates();
+  fillRates();
+  calculate();
+});
+
+$("saleForm").addEventListener("submit",event => {
+  event.preventDefault();
+
+  const client = $("client").value;
+  const reference = $("reference").value;
+  const amount = Number($("amount").value);
+
+  if (!client || !reference || !Number.isFinite(amount) || amount <= 0) {
+    alert("Completa todos los datos correctamente.");
+    return;
+  }
+
+  const chosen = selectedRate();
+  const rate = (Number(chosen.percent) || 0) / 100;
+  const commission = Math.round(amount * rate * 100) / 100;
+  const net = Math.round((amount - commission) * 100) / 100;
+
+  data.current.sales.push({
+    id:Date.now(),
+    time:now(),
+    client,
+    reference,
+    account:clients[client].account,
+    cta:clients[client].cta,
+    card:chosen.name,
+    rate,
+    amount,
+    commission,
+    net,
+    deposit:net
+  });
+
+  saveData();
+  $("saleForm").reset();
+  $("reference").innerHTML = '<option value="">Primero selecciona cliente</option>';
+  calculate();
+  render();
+});
+
+function groupSales(sales) {
+  const groups = {};
+  sales.forEach(s => {
+    const key = s.client + "||" + s.reference;
+    if (!groups[key]) groups[key] = {
+      client:s.client,reference:s.reference,sales:[]
+    };
+    groups[key].sales.push(s);
+  });
+  return Object.values(groups);
+}
+
+function renderSales(sales,target) {
+  target.innerHTML = "";
+
+  if (!sales.length) {
+    target.innerHTML = '<div class="empty">Todavía no hay ventas registradas.</div>';
+    return;
+  }
+
+  groupSales(sales).forEach(group => {
+    const t = totals(group.sales);
+    const first = group.sales[0];
+    const account = accountOf(first);
+
+    const details = document.createElement("details");
+    details.className = "sale-group";
+
+    const summary = document.createElement("summary");
+    summary.className = "group-head";
+    summary.innerHTML = `
+      <span class="group-title">${escapeHtml(group.client)} · ${escapeHtml(group.reference)}</span>
+      <span class="group-meta">${group.sales.length} venta(s) · ${money(t.sales)}</span>
+    `;
+    details.appendChild(summary);
+
+    const body = document.createElement("div");
+    body.className = "group-body";
+
+    const accountBox = document.createElement("div");
+    accountBox.className = "account-line";
+    accountBox.innerHTML = `
+      <strong>${escapeHtml(group.client)}</strong>
+      &nbsp; · &nbsp; Cuenta: ${escapeHtml(account.account)}
+      &nbsp; · &nbsp; CTA: ${escapeHtml(account.cta)}
+      &nbsp; · &nbsp; Ref.: ${escapeHtml(group.reference)}
+    `;
+    body.appendChild(accountBox);
+
+    group.sales.forEach(s => {
+      const row = document.createElement("div");
+      row.className = "sale-row";
+      row.innerHTML = `
+        <div><span>Fecha y hora:</span> <b>${dateTime(s.time)}</b></div>
+        <div><span>Tipo:</span> <b>${escapeHtml(s.card)}</b></div>
+        <div><span>Venta:</span> <b>${money(s.amount)}</b></div>
+        <div><span>Comisión (${((s.rate || 0)*100).toFixed(2)}%):</span> <b>${money(s.commission)}</b></div>
+        <div><span>Neto:</span> <b>${money(s.net)}</b></div>
+        <div><span>Depósito:</span> <b>${money(s.deposit ?? s.net)}</b></div>
+      `;
+      body.appendChild(row);
+    });
+
+    const totalBox = document.createElement("div");
+    totalBox.className = "total-box";
+    totalBox.innerHTML = `
+      <strong>TOTAL · ${escapeHtml(group.client)} · ${escapeHtml(group.reference)}</strong><br>
+      Ventas: ${money(t.sales)} &nbsp; · &nbsp;
+      Comisiones: ${money(t.commission)}<br>
+      Neto y depósito: ${money(t.net)}
+    `;
+    body.appendChild(totalBox);
+
+    details.appendChild(body);
+    target.appendChild(details);
+  });
+}
+
+function renderClientSummary(sales) {
+  const target = $("clientSummary");
+  target.innerHTML = "";
+
+  Object.entries(clients).forEach(([name,info]) => {
+    const clientSales = sales.filter(s => s.client === name);
+    const t = totals(clientSales);
+
+    const row = document.createElement("div");
+    row.className = "client-line";
+    row.innerHTML = `
+      <span class="client-name">${escapeHtml(name)}</span>
+      <span class="client-data">Cuenta: ${info.account}</span>
+      <span class="client-data">CTA: ${info.cta}</span>
+      <span class="client-total">${money(t.sales)}</span>
+    `;
+    target.appendChild(row);
+  });
+}
+
+function renderBreakdown(sales,target) {
+  target.innerHTML = "";
+
+  if (!sales.length) {
+    target.innerHTML = '<div class="empty">No hay ventas en esta caja.</div>';
+    return;
+  }
+
+  groupSales(sales).forEach(group => {
+    const t = totals(group.sales);
+    const first = group.sales[0];
+    const account = accountOf(first);
+
+    const box = document.createElement("div");
+    box.className = "total-box";
+    box.innerHTML = `
+      <strong>${escapeHtml(group.client)} · ${escapeHtml(group.reference)}</strong><br>
+      Cuenta: ${escapeHtml(account.account)} · CTA: ${escapeHtml(account.cta)}<br>
+      Ventas: ${money(t.sales)} · Comisiones: ${money(t.commission)}<br>
+      Neto y depósito: ${money(t.net)}
+    `;
+    target.appendChild(box);
+  });
+}
+
+function renderHistory() {
+  const target = $("historyList");
+  target.innerHTML = "";
+
+  const allSales = data.history.flatMap(c => c.sales || []);
+  const historicalTotals = totals(allSales);
+
+  $("historyCount").textContent = data.history.length;
+  $("historySales").textContent = money(historicalTotals.sales);
+  $("historyNet").textContent = money(historicalTotals.net);
+
+  if (!data.history.length) {
+    target.innerHTML = '<div class="empty">Todavía no hay cierres guardados.</div>';
+    return;
+  }
+
+  data.history.forEach((close,index) => {
+    const t = close.totals || totals(close.sales || []);
+    const item = document.createElement("details");
+    item.className = "history-item";
+
+    const summary = document.createElement("summary");
+    summary.innerHTML = `
+      <span>Caja ${data.history.length-index} · ${dateTime(close.closedAt)}</span>
+      <span class="badge">${money(t.sales)}</span>
+    `;
+    item.appendChild(summary);
+
+    const body = document.createElement("div");
+    body.className = "history-details";
+
+    const info = document.createElement("div");
+    info.className = "history-info";
+    info.innerHTML = `
+      <strong>DATOS DEL CIERRE</strong><br>
+      Apertura: ${dateTime(close.openedAt)}<br>
+      Cierre: ${dateTime(close.closedAt)}<br>
+      Total vendido: ${money(t.sales)}<br>
+      Comisiones: ${money(t.commission)}<br>
+      Depósito neto: ${money(t.net)}<br>
+      Observaciones: ${escapeHtml(close.observations || "Sin observaciones")}
+    `;
+    body.appendChild(info);
+
+    const heading = document.createElement("h3");
+    heading.textContent = "Totales por cliente y referencia";
+    heading.style.fontSize = "13px";
+    body.appendChild(heading);
+
+    renderBreakdown(close.sales || [],body);
+
+    const saleHeading = document.createElement("h3");
+    saleHeading.textContent = "Detalle de ventas individuales";
+    saleHeading.style.fontSize = "13px";
+    saleHeading.style.marginTop = "18px";
+    body.appendChild(saleHeading);
+
+    const salesContainer = document.createElement("div");
+    renderSales(close.sales || [],salesContainer);
+    body.appendChild(salesContainer);
+
+    item.appendChild(body);
+    target.appendChild(item);
+  });
+}
+
+function render() {
+  const sales = data.current.sales || [];
+  const t = totals(sales);
+
+  $("totalSales").textContent = money(t.sales);
+  $("totalCommission").textContent = money(t.commission);
+  $("totalNet").textContent = money(t.net);
+
+  $("closeSales").textContent = money(t.sales);
+  $("closeCommission").textContent = money(t.commission);
+  $("closeNet").textContent = money(t.net);
+
+  $("cashInfo").textContent = "Hora de apertura de esta caja: " + dateTime(data.current.openedAt);
+
+  renderClientSummary(sales);
+  renderSales(sales,$("salesList"));
+  renderBreakdown(sales,$("closingBreakdown"));
+  renderHistory();
+}
+
+$("closeButton").addEventListener("click",() => {
+  if (!data.current.sales.length) {
+    alert("Esta caja no tiene ventas. Registra al menos una venta antes de cerrarla.");
+    return;
+  }
+
+  if (!confirm("¿Confirmas el cierre de esta caja? Se guardarán todas sus ventas.")) return;
+
+  const closedAt = now();
+  const closed = {
+    id:data.current.id,
+    openedAt:data.current.openedAt,
+    closedAt,
+    observations:$("observations").value.trim(),
+    sales:data.current.sales,
+    totals:totals(data.current.sales)
+  };
+
+  data.history.unshift(closed);
+  data.current = emptyCash();
+
+  $("observations").value = "";
+  saveData();
+  render();
+
+  alert("¡Caja cerrada correctamente! Se abrió una nueva caja.");
+  showPage("history");
+});
+
+function showPage(page) {
+  const colors = {
+    register:"#10a99a",
+    closing:"#ef9845",
+    history:"#9874e8"
+  };
+
+  document.documentElement.style.setProperty("--accent",colors[page]);
+
+  ["register","closing","history"].forEach(name => {
+    $(name+"Page").classList.toggle("hidden",name !== page);
+  });
+
+  document.querySelectorAll(".tab[data-page]").forEach(button => {
+    button.classList.toggle("active",button.dataset.page === page);
+  });
+
+  render();
+}
+
+document.querySelectorAll(".tab[data-page]").forEach(button => {
+  button.addEventListener("click",() => showPage(button.dataset.page));
+});
+
+function applyTheme() {
+  const dark = localStorage.getItem(THEME_KEY) === "true";
+  document.body.classList.toggle("dark",dark);
+  $("themeButton").textContent = dark ? "☀ Claro" : "☾ Oscuro";
+}
+
+$("themeButton").addEventListener("click",() => {
+  const dark = !document.body.classList.contains("dark");
+  localStorage.setItem(THEME_KEY,String(dark));
+  applyTheme();
+});
+
+$("showPassword").addEventListener("click",() => {
+  const field = $("password");
+  field.type = field.type === "password" ? "text" : "password";
+  $("showPassword").textContent = field.type === "password" ? "Ver" : "Ocultar";
+});
+
+function showApp() {
+  $("loginScreen").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  applyTheme();
+  render();
+}
+
+$("loginForm").addEventListener("submit",event => {
+  event.preventDefault();
+
+  if ($("username").value.trim() === "admin" &&
+      $("password").value === "Culqui2026") {
+    sessionStorage.setItem("CULQUI_LOGIN","true");
+    $("loginError").textContent = "";
+    showApp();
+  } else {
+    $("loginError").textContent = "Usuario o contraseña incorrectos.";
+  }
+});
+
+fillRates();
+showApp();
+calculate();
+
+const packagedApp = location.hostname === "culqui.local";
+
+if (packagedApp && "serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(list => {
+    list.forEach(reg => reg.unregister());
+  });
+} else if ("serviceWorker" in navigator) {
+  window.addEventListener("load",() => {
+    navigator.serviceWorker.register("./sw.js")
+      .catch(error => console.error("Error al registrar SW:",error));
+  });
+}
+</script>
+</body>
+</html>

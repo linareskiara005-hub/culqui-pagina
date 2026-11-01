@@ -1,0 +1,28 @@
+CULQUI - INSTALACIÓN
+
+1. La carpeta debe contener:
+   - index.html
+   - manifest.json
+   - sw.js
+   - icons/icon-192.png
+   - icons/icon-512.png
+
+2. Comprueba que los dos iconos PNG estén dentro de la carpeta icons.
+
+3. Guarda todos los archivos.
+
+4. Sube la carpeta completa a Netlify.
+
+5. Abre la dirección de tu aplicación en Google Chrome desde Android.
+
+6. Abre el menú de Chrome (tres puntos).
+
+7. Selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".
+
+ACCESO
+La aplicación abre directo, sin pedir usuario ni contraseña.
+
+IMPORTANTE:
+Los datos se guardan en el almacenamiento local del navegador.
+No borres los datos del sitio ni el almacenamiento de Chrome.
+No se sincronizan automáticamente con otros dispositivos.
