@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#101c32">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(list) {
+    list.forEach(function(reg) { reg.unregister(); });
+  });
+}
+if (window.caches) {
+  caches.keys().then(function(keys) {
+    keys.forEach(function(key) { caches.delete(key); });
+  });
+}
+</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="CULQUI">
@@ -510,7 +523,7 @@ const STORAGE_KEY = "CULQUI_CAJAS_V3";
 const THEME_KEY = "CULQUI_DARK";
 const RATES_KEY = "CULQUI_RATES_V1";
 const DEFAULT_RATES = [
-  {id:"normal",name:"Normal",percent:2.5,locked:true},
+  {id:"normal",name:"Normal",percent:2.85,locked:true},
   {id:"diners",name:"Diners / American Express",percent:3.43,locked:true}
 ];
 
@@ -1234,16 +1247,9 @@ fillRates();
 showApp();
 calculate();
 
-const packagedApp = location.hostname === "culqui.local";
-
-if (packagedApp && "serviceWorker" in navigator) {
+if ("serviceWorker" in navigator) {
   navigator.serviceWorker.getRegistrations().then(list => {
     list.forEach(reg => reg.unregister());
-  });
-} else if ("serviceWorker" in navigator) {
-  window.addEventListener("load",() => {
-    navigator.serviceWorker.register("./sw.js")
-      .catch(error => console.error("Error al registrar SW:",error));
   });
 }
 </script>
