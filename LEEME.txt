@@ -11,13 +11,14 @@ CULQUI - INSTALACIÓN
 
 3. Guarda todos los archivos.
 
-4. Sube la carpeta completa a Netlify.
+4. La página para iPhone y para cualquier navegador es:
+   https://linareskiara005-hub.github.io/culqui-pagina/
 
-5. Abre la dirección de tu aplicación en Google Chrome desde Android.
+5. En el iPhone abre ese enlace con Safari.
 
-6. Abre el menú de Chrome (tres puntos).
+6. Toca Compartir y elige "Agregar a pantalla de inicio".
 
-7. Selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".
+7. En Android se puede abrir el mismo enlace en Chrome y elegir "Instalar aplicación".
 
 ACCESO
 La aplicación abre directo, sin pedir usuario ni contraseña.
