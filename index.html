@@ -201,22 +201,34 @@ input:focus,select:focus {
 .client-lines {display:flex;flex-direction:column}
 .client-line {
   display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:9px;
-  padding:14px 4px;border-bottom:1px solid var(--line);
-  font-size:13px;
+  flex-wrap:wrap;gap:10px;
+  padding:16px 4px;border-bottom:1px solid var(--line);
+  font-size:18px;
 }
-.client-line:last-child {border-bottom:0}
-.client-name {font-weight:800;min-width:125px}
-.client-data {color:var(--muted)}
-.client-total {font-weight:800;color:var(--accent)}
+.client-block:last-child .client-line {border-bottom:0}
+.client-name {font-weight:800;min-width:140px;font-size:18px}
+.client-data {color:var(--muted);font-size:17px}
+.client-total {font-weight:800;color:var(--accent);font-size:20px}
+.row-actions,.sale-actions {display:flex;gap:8px;align-items:center}
+.sale-actions {grid-column:1 / -1;justify-content:flex-end}
+.icon-btn {
+  width:40px;height:40px;border-radius:12px;border:1px solid var(--line);
+  background:var(--card2);color:var(--text);font-size:20px;cursor:pointer;
+}
+.icon-btn.danger {color:#e05b68}
+.client-editor {padding:4px 0 12px}
+.editor-line {
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:8px 0;font-size:17px;
+}
 
 /* TABLAS Y DETALLES */
 .table-wrap {width:100%;overflow-x:auto}
-table {width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
+table {width:100%;border-collapse:collapse;font-size:18px;min-width:480px}
 th {
   text-align:left;padding:13px 12px;
   color:var(--muted);background:var(--card2);
-  font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+  font-size:15px;text-transform:uppercase;letter-spacing:.5px;
 }
 td {padding:13px 12px;border-bottom:1px solid var(--line)}
 tr:last-child td {border-bottom:0}
@@ -234,26 +246,26 @@ tr:last-child td {border-bottom:0}
 .group-head::-webkit-details-marker {display:none}
 .group-head:after {content:"＋";color:var(--accent);font-weight:800}
 details[open] > .group-head:after {content:"−"}
-.group-title {font-weight:800;font-size:13px}
-.group-meta {font-size:12px;color:var(--muted)}
+.group-title {font-weight:800;font-size:18px}
+.group-meta {font-size:16px;color:var(--muted)}
 .group-body {padding:14px}
 .account-line {
   background:var(--card2);
   padding:12px 14px;border-radius:11px;
-  font-size:12px;line-height:1.8;margin-bottom:10px;
+  font-size:17px;line-height:1.8;margin-bottom:10px;
 }
 .account-line strong {color:var(--accent)}
 .sale-row {
   padding:13px 4px;border-bottom:1px solid var(--line);
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:7px 12px;font-size:12px;
+  gap:7px 12px;font-size:17px;
 }
 .sale-row:last-child {border-bottom:0}
 .sale-row span {color:var(--muted)}
 .sale-row b {color:var(--text)}
 .total-box {
   padding:13px 14px;border-radius:12px;
-  background:var(--card2);font-size:12px;line-height:1.9;
+  background:var(--card2);font-size:17px;line-height:1.9;
   margin-top:12px;
 }
 .total-box strong {color:var(--accent)}
@@ -261,13 +273,13 @@ details[open] > .group-head:after {content:"−"}
 .history-item > summary {
   cursor:pointer;list-style:none;padding:16px;
   display:flex;justify-content:space-between;
-  gap:10px;flex-wrap:wrap;font-size:13px;font-weight:800;
+  gap:10px;flex-wrap:wrap;font-size:18px;font-weight:800;
 }
 .history-item > summary::-webkit-details-marker {display:none}
 .history-details {padding:0 15px 15px}
 .history-info {
   background:var(--card2);padding:13px;border-radius:12px;
-  font-size:12px;line-height:1.9;margin-bottom:14px;
+  font-size:17px;line-height:1.9;margin-bottom:14px;
 }
 .empty {
   text-align:center;color:var(--muted);
@@ -276,7 +288,7 @@ details[open] > .group-head:after {content:"−"}
 .badge {
   display:inline-block;border-radius:30px;
   padding:5px 9px;background:rgba(16,169,154,.11);
-  color:var(--accent);font-size:10px;font-weight:800;
+  color:var(--accent);font-size:15px;font-weight:800;
 }
 .danger {background:#d94c5b}
 
@@ -317,7 +329,9 @@ details[open] > .group-head:after {content:"−"}
   .stat strong {font-size:17px}
   .stat span {font-size:10px}
   .grid {grid-template-columns:1fr;gap:0}
-  .client-line {align-items:flex-start;flex-direction:column;gap:5px}
+  .client-line {align-items:center;flex-wrap:wrap;gap:8px}
+  .client-name {width:100%}
+  .row-actions {margin-left:auto}
   .sale-row {grid-template-columns:1fr}
 }
 </style>
@@ -437,7 +451,9 @@ details[open] > .group-head:after {content:"−"}
 
       <div class="panel">
         <h2 class="panel-title">Cuentas de clientes</h2>
+        <p class="subtitle">El lápiz corrige un monto. La papelera borra esa venta.</p>
         <div id="clientSummary" class="client-lines"></div>
+        <button type="button" class="btn gray small" id="clearTodayButton">Borrar datos de hoy</button>
       </div>
 
       <div class="panel">
@@ -473,9 +489,9 @@ details[open] > .group-head:after {content:"−"}
     <!-- HISTORIAL -->
     <section id="historyPage" class="hidden section-purple">
       <div class="panel">
-        <h2 class="panel-title">Historial de cierres</h2>
+        <h2 class="panel-title">Historial por día</h2>
         <div class="stats">
-          <div class="stat"><span>CAJAS CERRADAS</span><strong id="historyCount">0</strong></div>
+          <div class="stat"><span>DÍAS</span><strong id="historyCount">0</strong></div>
           <div class="stat"><span>VENTAS HISTÓRICAS</span><strong id="historySales">S/ 0.00</strong></div>
           <div class="stat"><span>DEPÓSITO HISTÓRICO</span><strong id="historyNet">S/ 0.00</strong></div>
         </div>
@@ -530,6 +546,113 @@ function loadData() {
 }
 
 let data = loadData();
+
+function dayKey(value) {
+  const d = new Date(value);
+  const month = String(d.getMonth() + 1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return d.getFullYear() + "-" + month + "-" + day;
+}
+
+function dayTitle(key) {
+  const today = dayKey(Date.now());
+  const yesterday = dayKey(Date.now() - 86400000);
+  const parts = key.split("-").map(Number);
+  const date = new Date(parts[0], parts[1] - 1, parts[2]);
+  const text = date.toLocaleDateString("es-PE",{
+    weekday:"long", day:"numeric", month:"long"
+  });
+  const label = text.charAt(0).toUpperCase() + text.slice(1);
+  if (key === today) return "Hoy · " + label;
+  if (key === yesterday) return "Ayer · " + label;
+  return label;
+}
+
+function archivePastDays() {
+  const today = dayKey(Date.now());
+  const sales = data.current.sales || [];
+  const past = sales.filter(sale => dayKey(sale.time || data.current.openedAt) !== today);
+  const todaySales = sales.filter(sale => dayKey(sale.time || data.current.openedAt) === today);
+  if (!past.length) {
+    if (dayKey(data.current.openedAt) !== today && !todaySales.length) {
+      data.current.openedAt = now();
+      saveData();
+    }
+    return;
+  }
+
+  const byDay = {};
+  past.forEach(sale => {
+    const key = dayKey(sale.time || data.current.openedAt);
+    if (!byDay[key]) byDay[key] = [];
+    byDay[key].push(sale);
+  });
+
+  Object.keys(byDay).sort().reverse().forEach(key => {
+    const daySales = byDay[key];
+    data.history.unshift({
+      id:Date.now() + Math.floor(Math.random() * 1000),
+      openedAt:daySales[0].time,
+      closedAt:daySales[daySales.length - 1].time,
+      observations:"Cierre automático del día",
+      sales:daySales,
+      totals:totals(daySales),
+      day:key
+    });
+  });
+
+  data.current.sales = todaySales;
+  if (!todaySales.length) data.current = emptyCash();
+  saveData();
+}
+
+archivePastDays();
+
+function findSale(id) {
+  const current = (data.current.sales || []).find(sale => sale.id === id);
+  if (current) return {sale:current};
+  for (const close of data.history) {
+    const sale = (close.sales || []).find(item => item.id === id);
+    if (sale) return {sale, close};
+  }
+  return null;
+}
+
+function applyAmount(sale, amount) {
+  const rate = Number(sale.rate) || 0;
+  sale.amount = amount;
+  sale.commission = Math.round(amount * rate * 100) / 100;
+  sale.net = Math.round((amount - sale.commission) * 100) / 100;
+  sale.deposit = sale.net;
+}
+
+function editSale(id) {
+  const found = findSale(id);
+  if (!found) return;
+  const next = prompt("Nuevo monto de la venta (S/)", String(found.sale.amount));
+  if (next === null) return;
+  const amount = Number(String(next).replace(",",".").trim());
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert("Escribe un monto mayor que 0.");
+    return;
+  }
+  applyAmount(found.sale, Math.round(amount * 100) / 100);
+  if (found.close) found.close.totals = totals(found.close.sales);
+  saveData();
+  render();
+}
+
+function deleteSale(id) {
+  if (!confirm("¿Borrar esta venta?")) return;
+  data.current.sales = (data.current.sales || []).filter(sale => sale.id !== id);
+  data.history.forEach(close => {
+    close.sales = (close.sales || []).filter(sale => sale.id !== id);
+    close.totals = totals(close.sales);
+  });
+  data.history = data.history.filter(close => (close.sales || []).length);
+  saveData();
+  render();
+}
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
@@ -774,6 +897,22 @@ function renderSales(sales,target) {
         <div><span>Neto:</span> <b>${money(s.net)}</b></div>
         <div><span>Depósito:</span> <b>${money(s.deposit ?? s.net)}</b></div>
       `;
+      const actions = document.createElement("div");
+      actions.className = "sale-actions";
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "icon-btn";
+      edit.textContent = "✎";
+      edit.title = "Corregir monto";
+      edit.addEventListener("click",() => editSale(s.id));
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "icon-btn danger";
+      remove.textContent = "🗑";
+      remove.title = "Borrar venta";
+      remove.addEventListener("click",() => deleteSale(s.id));
+      actions.append(edit,remove);
+      row.appendChild(actions);
       body.appendChild(row);
     });
 
@@ -800,6 +939,9 @@ function renderClientSummary(sales) {
     const clientSales = sales.filter(s => s.client === name);
     const t = totals(clientSales);
 
+    const block = document.createElement("div");
+    block.className = "client-block";
+
     const row = document.createElement("div");
     row.className = "client-line";
     row.innerHTML = `
@@ -808,7 +950,62 @@ function renderClientSummary(sales) {
       <span class="client-data">CTA: ${info.cta}</span>
       <span class="client-total">${money(t.sales)}</span>
     `;
-    target.appendChild(row);
+
+    const actions = document.createElement("span");
+    actions.className = "row-actions";
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "icon-btn";
+    edit.textContent = "✎";
+    edit.title = "Corregir monto";
+    edit.addEventListener("click",() => {
+      const open = block.querySelector(".client-editor");
+      if (open) { open.remove(); return; }
+      if (!clientSales.length) {
+        alert("Este cliente no tiene ventas para corregir.");
+        return;
+      }
+      const editor = document.createElement("div");
+      editor.className = "client-editor";
+      clientSales.forEach(sale => {
+        const line = document.createElement("div");
+        line.className = "editor-line";
+        line.innerHTML = `<span>${dateTime(sale.time)} · ${escapeHtml(sale.reference)} · ${money(sale.amount)}</span>`;
+        const fix = document.createElement("button");
+        fix.type = "button";
+        fix.className = "icon-btn";
+        fix.textContent = "✎";
+        fix.addEventListener("click",() => editSale(sale.id));
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "icon-btn danger";
+        remove.textContent = "🗑";
+        remove.addEventListener("click",() => deleteSale(sale.id));
+        line.append(fix,remove);
+        editor.appendChild(line);
+      });
+      block.appendChild(editor);
+    });
+    const removeAll = document.createElement("button");
+    removeAll.type = "button";
+    removeAll.className = "icon-btn danger";
+    removeAll.textContent = "🗑";
+    removeAll.title = "Borrar ventas de este cliente";
+    removeAll.addEventListener("click",() => {
+      if (!clientSales.length) {
+        alert("Este cliente no tiene ventas de hoy.");
+        return;
+      }
+      if (!confirm("¿Borrar las ventas de hoy de " + name + "?")) return;
+      const ids = new Set(clientSales.map(sale => sale.id));
+      data.current.sales = data.current.sales.filter(sale => !ids.has(sale.id));
+      saveData();
+      render();
+    });
+    actions.append(edit,removeAll);
+    row.appendChild(actions);
+    block.appendChild(row);
+    target.appendChild(block);
   });
 }
 
@@ -837,30 +1034,42 @@ function renderBreakdown(sales,target) {
   });
 }
 
+function salesByDay() {
+  const map = {};
+  const add = sale => {
+    const key = dayKey(sale.time || Date.now());
+    if (!map[key]) map[key] = [];
+    map[key].push(sale);
+  };
+  data.history.forEach(close => (close.sales || []).forEach(add));
+  (data.current.sales || []).forEach(add);
+  const today = dayKey(Date.now());
+  if (!map[today]) map[today] = [];
+  return map;
+}
+
 function renderHistory() {
   const target = $("historyList");
   target.innerHTML = "";
-
-  const allSales = data.history.flatMap(c => c.sales || []);
+  const days = salesByDay();
+  const keys = Object.keys(days).sort().reverse();
+  const allSales = keys.flatMap(key => days[key]);
   const historicalTotals = totals(allSales);
 
-  $("historyCount").textContent = data.history.length;
+  $("historyCount").textContent = keys.length;
   $("historySales").textContent = money(historicalTotals.sales);
   $("historyNet").textContent = money(historicalTotals.net);
 
-  if (!data.history.length) {
-    target.innerHTML = '<div class="empty">Todavía no hay cierres guardados.</div>';
-    return;
-  }
-
-  data.history.forEach((close,index) => {
-    const t = close.totals || totals(close.sales || []);
+  keys.forEach(key => {
+    const sales = days[key];
+    const t = totals(sales);
     const item = document.createElement("details");
     item.className = "history-item";
+    if (key === dayKey(Date.now())) item.open = true;
 
     const summary = document.createElement("summary");
     summary.innerHTML = `
-      <span>Caja ${data.history.length-index} · ${dateTime(close.closedAt)}</span>
+      <span>${dayTitle(key)}</span>
       <span class="badge">${money(t.sales)}</span>
     `;
     item.appendChild(summary);
@@ -871,33 +1080,29 @@ function renderHistory() {
     const info = document.createElement("div");
     info.className = "history-info";
     info.innerHTML = `
-      <strong>DATOS DEL CIERRE</strong><br>
-      Apertura: ${dateTime(close.openedAt)}<br>
-      Cierre: ${dateTime(close.closedAt)}<br>
+      <strong>${dayTitle(key)}</strong><br>
+      Ventas: ${sales.length}<br>
       Total vendido: ${money(t.sales)}<br>
       Comisiones: ${money(t.commission)}<br>
-      Depósito neto: ${money(t.net)}<br>
-      Observaciones: ${escapeHtml(close.observations || "Sin observaciones")}
+      Depósito neto: ${money(t.net)}
     `;
     body.appendChild(info);
 
     const heading = document.createElement("h3");
     heading.textContent = "Totales por cliente y referencia";
-    heading.style.fontSize = "13px";
+    heading.style.fontSize = "18px";
     body.appendChild(heading);
-
-    renderBreakdown(close.sales || [],body);
+    renderBreakdown(sales,body);
 
     const saleHeading = document.createElement("h3");
-    saleHeading.textContent = "Detalle de ventas individuales";
-    saleHeading.style.fontSize = "13px";
+    saleHeading.textContent = "Detalle de ventas";
+    saleHeading.style.fontSize = "18px";
     saleHeading.style.marginTop = "18px";
     body.appendChild(saleHeading);
 
     const salesContainer = document.createElement("div");
-    renderSales(close.sales || [],salesContainer);
+    renderSales(sales,salesContainer);
     body.appendChild(salesContainer);
-
     item.appendChild(body);
     target.appendChild(item);
   });
@@ -922,6 +1127,17 @@ function render() {
   renderBreakdown(sales,$("closingBreakdown"));
   renderHistory();
 }
+
+$("clearTodayButton").addEventListener("click",() => {
+  if (!(data.current.sales || []).length) {
+    alert("Hoy no hay ventas para borrar.");
+    return;
+  }
+  if (!confirm("¿Borrar todas las ventas de hoy? El historial de los otros días se conserva.")) return;
+  data.current.sales = [];
+  saveData();
+  render();
+});
 
 $("closeButton").addEventListener("click",() => {
   if (!data.current.sales.length) {
