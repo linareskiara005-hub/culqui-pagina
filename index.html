@@ -247,6 +247,15 @@ input:focus,select:focus {
 }
 .icon-btn.danger {color:#e05b68}
 .icon-btn.add {font-weight:800;font-size:18px}
+.amount-row {display:flex;gap:8px;align-items:center}
+.amount-row input {flex:1;min-width:0;width:auto}
+.split-btn {font-weight:800;font-size:16px}
+.split-btn.active {background:var(--accent);border-color:var(--accent);color:#fff}
+.split-note {margin:8px 0 0;font-size:12px;font-weight:700;color:var(--accent);line-height:1.45}
+.split-detail {grid-column:1 / -1;font-size:15px}
+.modal-card.split-card {width:min(520px,100%)}
+.split-total {margin:-4px 0 14px;font-size:14px}
+.split-total strong {color:var(--accent)}
 .modal {
   position:fixed;inset:0;z-index:40;
   background:rgba(16,36,58,.48);
@@ -480,7 +489,11 @@ details[open] > .group-head:after {content:"−"}
             </div>
             <div class="field">
               <label>MONTO DE VENTA (S/)</label>
-              <input id="amount" type="number" min="0.01" step="0.01" placeholder="Ej. 500.00" required>
+              <div class="amount-row">
+                <input id="amount" type="number" min="0.01" step="0.01" placeholder="Ej. 500.00" required>
+                <button type="button" class="icon-btn split-btn" id="splitButton" title="Divisor">D</button>
+              </div>
+              <p id="splitNote" class="split-note hidden"></p>
             </div>
           </div>
           <div class="calculation" id="calculation">
@@ -496,7 +509,7 @@ details[open] > .group-head:after {content:"−"}
 
       <div class="panel">
         <h2 class="panel-title">Cuentas de clientes</h2>
-        <p class="subtitle">El lápiz corrige un monto. La papelera borra esa venta.</p>
+        <p class="subtitle">El lápiz corrige el monto y la comisión. La papelera borra esa venta.</p>
         <div id="clientSummary" class="client-lines"></div>
         <button type="button" class="btn gray small" id="clearTodayButton">Borrar datos de hoy</button>
       </div>
@@ -585,6 +598,68 @@ details[open] > .group-head:after {content:"−"}
   </div>
 </div>
 
+<div id="splitModal" class="modal hidden">
+  <div class="modal-card split-card">
+    <h2 class="panel-title">Dividir venta</h2>
+    <p class="subtitle">Pasa una parte a otra comisión. El resto usa la comisión normal. Se guarda como una sola venta.</p>
+    <p class="split-total">Total de la venta: <strong id="splitTotal">S/ 0.00</strong></p>
+    <div class="field">
+      <label>MONTO A PASAR (S/)</label>
+      <input id="splitSpecial" type="number" min="0.01" step="0.01" placeholder="Ej. 100.00">
+    </div>
+    <div class="field">
+      <label>COMISIÓN DE ESE MONTO (%)</label>
+      <input id="splitPercent" type="number" min="0" max="100" step="0.01" placeholder="Ej. 2.45">
+    </div>
+    <div class="calculation" id="splitPreview">
+      Escribe el monto especial para calcular las dos partes.
+    </div>
+    <p id="splitError" class="login-error"></p>
+    <div class="rate-actions">
+      <button class="btn gray" type="button" id="splitCancel">Cancelar</button>
+      <button class="btn gray hidden" type="button" id="splitClear">Quitar división</button>
+      <button class="btn" type="button" id="splitApply">Aplicar división</button>
+    </div>
+  </div>
+</div>
+
+<div id="editModal" class="modal hidden">
+  <div class="modal-card split-card">
+    <h2 class="panel-title">Corregir venta</h2>
+    <p class="subtitle">Cambia el monto y la comisión. Sigue siendo la misma venta.</p>
+    <div class="field">
+      <label>MONTO DE LA VENTA (S/)</label>
+      <input id="editAmount" type="number" min="0.01" step="0.01">
+    </div>
+    <div id="editSimple">
+      <div class="field">
+        <label>COMISIÓN (%)</label>
+        <input id="editPercent" type="number" min="0" max="100" step="0.01">
+      </div>
+    </div>
+    <div id="editSplit" class="hidden">
+      <div class="field">
+        <label>MONTO A LA OTRA COMISIÓN (S/)</label>
+        <input id="editSpecialAmount" type="number" min="0.01" step="0.01">
+      </div>
+      <div class="field">
+        <label>COMISIÓN DE ESE MONTO (%)</label>
+        <input id="editSpecialPercent" type="number" min="0" max="100" step="0.01">
+      </div>
+      <div class="field">
+        <label>COMISIÓN NORMAL DEL RESTANTE (%)</label>
+        <input id="editRemainPercent" type="number" min="0" max="100" step="0.01">
+      </div>
+    </div>
+    <div class="calculation" id="editPreview"></div>
+    <p id="editError" class="login-error"></p>
+    <div class="rate-actions">
+      <button class="btn gray" type="button" id="editCancel">Cancelar</button>
+      <button class="btn" type="button" id="editApply">Guardar corrección</button>
+    </div>
+  </div>
+</div>
+
 <script>
 "use strict";
 
@@ -595,6 +670,7 @@ const DEFAULT_RATES = [
   {id:"normal",name:"Normal",percent:2.85,locked:true},
   {id:"diners",name:"Diners / American Express",percent:3.43,locked:true}
 ];
+const SPLIT_DEFAULT_PERCENT = 2.45;
 
 const clients = {
   "Benito A": {account:"7749",cta:"3032",refs:["R1","R2","R3"]},
@@ -700,28 +776,147 @@ function findSale(id) {
   return null;
 }
 
-function applyAmount(sale, amount) {
-  const rate = Number(sale.rate) || 0;
-  sale.amount = amount;
-  sale.commission = Math.round(amount * rate * 100) / 100;
-  sale.net = Math.round((amount - sale.commission) * 100) / 100;
-  sale.deposit = sale.net;
+function roundMoney(n) {
+  return Math.round(Number(n) * 100) / 100;
+}
+
+function partCalc(amount, rate) {
+  const rounded = roundMoney(amount);
+  const commission = roundMoney(rounded * rate);
+  const deposit = roundMoney(rounded - commission);
+  return {amount:rounded, rate, commission, deposit};
+}
+
+function normalRate() {
+  const normal = rates.find(rate => rate.id === "normal");
+  return ((normal ? Number(normal.percent) : 2.85) || 2.85) / 100;
+}
+
+function percentToRate(value) {
+  const percent = Number(value);
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) return null;
+  return Math.round(percent * 100) / 10000;
+}
+
+function buildSplit(totalAmount, specialAmount, specialRate, remainingRate) {
+  const total = roundMoney(totalAmount);
+  const special = roundMoney(specialAmount);
+  if (!Number.isFinite(total) || !Number.isFinite(special)) return null;
+  if (!Number.isFinite(specialRate) || !Number.isFinite(remainingRate)) return null;
+  if (special <= 0 || total <= special) return null;
+  if (specialRate < 0 || remainingRate < 0) return null;
+  const specialPart = partCalc(special, specialRate);
+  const remainingPart = partCalc(roundMoney(total - special), remainingRate);
+  const commission = roundMoney(specialPart.commission + remainingPart.commission);
+  const deposit = roundMoney(specialPart.deposit + remainingPart.deposit);
+  return {
+    special:specialPart,
+    remaining:remainingPart,
+    commission,
+    deposit,
+    net:deposit
+  };
+}
+
+let pendingSplit = null;
+
+function currentSplit() {
+  if (!pendingSplit) return null;
+  return buildSplit(
+    Number($("amount").value),
+    pendingSplit.amount,
+    percentToRate(pendingSplit.percent),
+    normalRate()
+  );
+}
+
+function writeSplitSale(sale, split) {
+  sale.amount = roundMoney(split.special.amount + split.remaining.amount);
+  sale.commission = split.commission;
+  sale.net = split.net;
+  sale.deposit = split.deposit;
+  sale.rate = split.remaining.rate;
+  sale.card = "División " + formatPercent(split.special.rate * 100) + "% / Normal " + formatPercent(split.remaining.rate * 100) + "%";
+  sale.split = {special:split.special, remaining:split.remaining};
+}
+
+function writeSimpleSale(sale, amount, rate) {
+  const rounded = roundMoney(amount);
+  const commission = roundMoney(rounded * rate);
+  const net = roundMoney(rounded - commission);
+  const percent = Math.round(rate * 10000) / 100;
+  const match = rates.find(item => Math.abs(Number(item.percent) - percent) < 0.001);
+  sale.amount = rounded;
+  sale.rate = rate;
+  sale.commission = commission;
+  sale.net = net;
+  sale.deposit = net;
+  sale.card = match ? match.name : "Comisión " + formatPercent(percent) + "%";
+  delete sale.split;
+}
+
+let editSaleId = null;
+
+function editDraft() {
+  const amount = Number($("editAmount").value);
+  if ($("editSplit").classList.contains("hidden")) {
+    const rate = percentToRate($("editPercent").value);
+    if (!Number.isFinite(amount) || amount <= 0 || rate == null) return null;
+    const rounded = roundMoney(amount);
+    const commission = roundMoney(rounded * rate);
+    const net = roundMoney(rounded - commission);
+    return {split:false, amount:rounded, rate, commission, net};
+  }
+  const split = buildSplit(
+    amount,
+    Number($("editSpecialAmount").value),
+    percentToRate($("editSpecialPercent").value),
+    percentToRate($("editRemainPercent").value)
+  );
+  return split ? {split:true, result:split} : null;
+}
+
+function renderEditPreview() {
+  const draft = editDraft();
+  $("editError").textContent = "";
+  if (!draft) {
+    $("editPreview").textContent = "Escribe un monto mayor que 0 y una comisión entre 0 y 100. En una división, el monto pasado debe ser menor que el total.";
+    return;
+  }
+  if (!draft.split) {
+    $("editPreview").innerHTML = `
+      Comisión (${formatPercent(draft.rate * 100)}%): <strong>${money(draft.commission)}</strong><br>
+      Neto y depósito: <strong>${money(draft.net)}</strong>
+    `;
+    return;
+  }
+  $("editPreview").innerHTML = splitPreviewHtml(draft.result);
+}
+
+function closeEditModal() {
+  $("editModal").classList.add("hidden");
+  editSaleId = null;
 }
 
 function editSale(id) {
   const found = findSale(id);
   if (!found) return;
-  const next = prompt("Nuevo monto de la venta (S/)", String(found.sale.amount));
-  if (next === null) return;
-  const amount = Number(String(next).replace(",",".").trim());
-  if (!Number.isFinite(amount) || amount <= 0) {
-    alert("Escribe un monto mayor que 0.");
-    return;
+  editSaleId = id;
+  const sale = found.sale;
+  $("editAmount").value = String(sale.amount);
+  const divided = !!(sale.split && sale.split.special && sale.split.remaining);
+  $("editSimple").classList.toggle("hidden", divided);
+  $("editSplit").classList.toggle("hidden", !divided);
+  if (divided) {
+    $("editSpecialAmount").value = String(sale.split.special.amount);
+    $("editSpecialPercent").value = formatPercent(sale.split.special.rate * 100);
+    $("editRemainPercent").value = formatPercent(sale.split.remaining.rate * 100);
+  } else {
+    $("editPercent").value = formatPercent((Number(sale.rate) || 0) * 100);
   }
-  applyAmount(found.sale, Math.round(amount * 100) / 100);
-  if (found.close) found.close.totals = totals(found.close.sales);
-  saveData();
-  render();
+  renderEditPreview();
+  $("editModal").classList.remove("hidden");
+  $("editAmount").focus();
 }
 
 function deleteSale(id) {
@@ -918,8 +1113,101 @@ function fillRates(keepId) {
   $("removeRateButton").classList.toggle("hidden",!selected || selected.locked);
 }
 
+function updateSplitUi() {
+  const split = currentSplit();
+  const button = $("splitButton");
+  const note = $("splitNote");
+  button.classList.toggle("active", !!split);
+  if (split) {
+    note.classList.remove("hidden");
+    note.textContent = "División lista: " + money(split.special.amount) + " al " + formatPercent(split.special.rate * 100) + "% · restante " + money(split.remaining.amount) + " con comisión normal " + formatPercent(split.remaining.rate * 100) + "%. Una sola venta.";
+    return;
+  }
+  if (pendingSplit) {
+    note.classList.remove("hidden");
+    note.textContent = "La división no cabe en el monto actual. Sube el total o quítala.";
+    return;
+  }
+  note.classList.add("hidden");
+  note.textContent = "";
+}
+
+function splitPreviewHtml(split) {
+  return `
+    Pasado ${money(split.special.amount)} · ${formatPercent(split.special.rate * 100)}%: comisión <strong>${money(split.special.commission)}</strong> · depósito <strong>${money(split.special.deposit)}</strong><br>
+    Restante ${money(split.remaining.amount)} · normal ${formatPercent(split.remaining.rate * 100)}%: comisión <strong>${money(split.remaining.commission)}</strong> · depósito <strong>${money(split.remaining.deposit)}</strong><br>
+    Total comisión: <strong>${money(split.commission)}</strong><br>
+    Total depósito: <strong>${money(split.deposit)}</strong><br>
+    Total venta: <strong>${money(roundMoney(split.special.amount + split.remaining.amount))}</strong>
+  `;
+}
+
+function renderSplitPreview() {
+  const total = Number($("amount").value);
+  const special = Number($("splitSpecial").value);
+  const specialRate = percentToRate($("splitPercent").value);
+  $("splitTotal").textContent = money(roundMoney(total));
+  $("splitError").textContent = "";
+  if (!Number.isFinite(total) || total <= 0) {
+    $("splitPreview").textContent = "Escribe primero el monto de la venta.";
+    return;
+  }
+  if (!String($("splitSpecial").value).trim()) {
+    $("splitPreview").textContent = "Escribe el monto que pasa a la otra comisión.";
+    return;
+  }
+  if (!Number.isFinite(special) || special <= 0) {
+    $("splitError").textContent = "El monto a pasar debe ser mayor que 0.";
+    $("splitPreview").textContent = "Corrige el monto para ver el cálculo.";
+    return;
+  }
+  if (specialRate == null) {
+    $("splitError").textContent = "La comisión debe estar entre 0 y 100.";
+    $("splitPreview").textContent = "Corrige la comisión para ver el cálculo.";
+    return;
+  }
+  const split = buildSplit(total, special, specialRate, normalRate());
+  if (!split) {
+    $("splitError").textContent = "El monto a pasar debe ser menor que el total. El restante usa la comisión normal.";
+    $("splitPreview").textContent = "Corrige el monto para ver el cálculo.";
+    return;
+  }
+  $("splitPreview").innerHTML = splitPreviewHtml(split);
+}
+
+function closeSplitModal() {
+  $("splitModal").classList.add("hidden");
+}
+
+function openSplitModal() {
+  const amount = Number($("amount").value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert("Escribe primero un monto de venta mayor que 0.");
+    $("amount").focus();
+    return;
+  }
+  $("splitSpecial").value = pendingSplit ? String(pendingSplit.amount) : "";
+  $("splitPercent").value = pendingSplit ? String(pendingSplit.percent) : String(SPLIT_DEFAULT_PERCENT);
+  $("splitClear").classList.toggle("hidden", !pendingSplit);
+  renderSplitPreview();
+  $("splitModal").classList.remove("hidden");
+  $("splitSpecial").focus();
+}
+
+function clearPendingSplit() {
+  pendingSplit = null;
+  updateSplitUi();
+  calculate();
+}
+
 function calculate() {
   const amount = Math.max(0,Number($("amount").value) || 0);
+  const split = currentSplit();
+  updateSplitUi();
+  if (split) {
+    $("calculation").innerHTML = splitPreviewHtml(split);
+    return;
+  }
   const rate = (Number(selectedRate().percent) || 0) / 100;
   const commission = Math.round(amount * rate * 100) / 100;
   const net = Math.round((amount - commission) * 100) / 100;
@@ -945,6 +1233,58 @@ $("client").addEventListener("change",() => {
 });
 
 $("amount").addEventListener("input",calculate);
+$("splitButton").addEventListener("click",openSplitModal);
+$("splitCancel").addEventListener("click",closeSplitModal);
+$("splitSpecial").addEventListener("input",renderSplitPreview);
+$("splitPercent").addEventListener("input",renderSplitPreview);
+$("splitClear").addEventListener("click",() => {
+  clearPendingSplit();
+  closeSplitModal();
+});
+$("splitApply").addEventListener("click",() => {
+  const total = Number($("amount").value);
+  const special = Number($("splitSpecial").value);
+  const specialRate = percentToRate($("splitPercent").value);
+  const split = buildSplit(total, special, specialRate, normalRate());
+  if (!split) {
+    renderSplitPreview();
+    if (!$("splitError").textContent) {
+      $("splitError").textContent = "Escribe un monto mayor que 0, menor que el total, y una comisión entre 0 y 100.";
+    }
+    return;
+  }
+  pendingSplit = {
+    amount:split.special.amount,
+    percent:Math.round(split.special.rate * 10000) / 100
+  };
+  closeSplitModal();
+  calculate();
+});
+$("splitModal").addEventListener("click",event => {
+  if (event.target === $("splitModal")) closeSplitModal();
+});
+["editAmount","editPercent","editSpecialAmount","editSpecialPercent","editRemainPercent"].forEach(id => {
+  $(id).addEventListener("input",renderEditPreview);
+});
+$("editCancel").addEventListener("click",closeEditModal);
+$("editModal").addEventListener("click",event => {
+  if (event.target === $("editModal")) closeEditModal();
+});
+$("editApply").addEventListener("click",() => {
+  const found = findSale(editSaleId);
+  const draft = editDraft();
+  if (!found || !draft) {
+    renderEditPreview();
+    $("editError").textContent = "Revisa el monto y la comisión antes de guardar.";
+    return;
+  }
+  if (draft.split) writeSplitSale(found.sale, draft.result);
+  else writeSimpleSale(found.sale, draft.amount, draft.rate);
+  if (found.close) found.close.totals = totals(found.close.sales);
+  saveData();
+  closeEditModal();
+  render();
+});
 $("card").addEventListener("change",() => {
   fillRates();
   calculate();
@@ -999,26 +1339,40 @@ $("saleForm").addEventListener("submit",event => {
   }
 
   const chosen = selectedRate();
-  const rate = (Number(chosen.percent) || 0) / 100;
-  const commission = Math.round(amount * rate * 100) / 100;
-  const net = Math.round((amount - commission) * 100) / 100;
+  const split = currentSplit();
+  if (pendingSplit && !split) {
+    alert("El monto a pasar debe ser mayor que 0 y menor que el monto de la venta.");
+    return;
+  }
 
-  data.current.sales.push({
+  const sale = {
     id:Date.now(),
     time:now(),
     client,
     reference,
     account:clients[client].account,
-    cta:clients[client].cta,
-    card:chosen.name,
-    rate,
-    amount,
-    commission,
-    net,
-    deposit:net
-  });
+    cta:clients[client].cta
+  };
+
+  if (split) {
+    sale.amount = roundMoney(amount);
+    writeSplitSale(sale, split);
+  } else {
+    const rate = (Number(chosen.percent) || 0) / 100;
+    const commission = Math.round(amount * rate * 100) / 100;
+    const net = Math.round((amount - commission) * 100) / 100;
+    sale.card = chosen.name;
+    sale.rate = rate;
+    sale.amount = amount;
+    sale.commission = commission;
+    sale.net = net;
+    sale.deposit = net;
+  }
+
+  data.current.sales.push(sale);
 
   saveData();
+  pendingSplit = null;
   $("saleForm").reset();
   $("reference").innerHTML = '<option value="">Primero selecciona cliente</option>';
   calculate();
@@ -1077,11 +1431,16 @@ function renderSales(sales,target) {
     group.sales.forEach(s => {
       const row = document.createElement("div");
       row.className = "sale-row";
+      const splitHtml = s.split ? `
+        <div class="split-detail"><span>Pasado ${money(s.split.special.amount)} · ${formatPercent(s.split.special.rate * 100)}%:</span> <b>comisión ${money(s.split.special.commission)} · depósito ${money(s.split.special.deposit)}</b></div>
+        <div class="split-detail"><span>Restante ${money(s.split.remaining.amount)} · normal ${formatPercent(s.split.remaining.rate * 100)}%:</span> <b>comisión ${money(s.split.remaining.commission)} · depósito ${money(s.split.remaining.deposit)}</b></div>
+      ` : "";
       row.innerHTML = `
         <div><span>Fecha y hora:</span> <b>${dateTime(s.time)}</b></div>
         <div><span>Tipo:</span> <b>${escapeHtml(s.card)}</b></div>
         <div><span>Venta:</span> <b>${money(s.amount)}</b></div>
-        <div><span>Comisión (${((s.rate || 0)*100).toFixed(2)}%):</span> <b>${money(s.commission)}</b></div>
+        <div><span>Comisión${s.split ? "" : " (" + ((s.rate || 0)*100).toFixed(2) + "%)"}:</span> <b>${money(s.commission)}</b></div>
+        ${splitHtml}
         <div><span>Neto:</span> <b>${money(s.net)}</b></div>
         <div><span>Depósito:</span> <b>${money(s.deposit ?? s.net)}</b></div>
       `;
@@ -1091,7 +1450,7 @@ function renderSales(sales,target) {
       edit.type = "button";
       edit.className = "icon-btn";
       edit.textContent = "✎";
-      edit.title = "Corregir monto";
+      edit.title = "Corregir monto y comisión";
       edit.addEventListener("click",() => editSale(s.id));
       const add = document.createElement("button");
       add.type = "button";
@@ -1151,7 +1510,7 @@ function renderClientSummary(sales) {
     edit.type = "button";
     edit.className = "icon-btn";
     edit.textContent = "✎";
-    edit.title = "Corregir monto";
+    edit.title = "Corregir monto y comisión";
     edit.addEventListener("click",() => {
       const open = block.querySelector(".client-editor");
       if (open) { open.remove(); return; }
@@ -1164,7 +1523,7 @@ function renderClientSummary(sales) {
       clientSales.forEach(sale => {
         const line = document.createElement("div");
         line.className = "editor-line";
-        line.innerHTML = `<span>${dateTime(sale.time)} · ${escapeHtml(sale.reference)} · ${money(sale.amount)}</span>`;
+        line.innerHTML = `<span>${dateTime(sale.time)} · ${escapeHtml(sale.reference)} · ${money(sale.amount)}${sale.split ? " · División" : ""}</span>`;
         const fix = document.createElement("button");
         fix.type = "button";
         fix.className = "icon-btn";
