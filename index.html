@@ -110,7 +110,7 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
   padding:12px 17px;
   border-radius:13px;
   font-weight:700;
-  font-size:13px;
+  font-size:16px;
   box-shadow:0 3px 12px rgba(20,40,70,.03);
   transition:.2s;
 }
@@ -132,7 +132,7 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
 .btn.gray {background:#65748b}
 .btn.orange {background:var(--orange)}
 .btn.purple {background:var(--purple)}
-.btn.small {font-size:12px;padding:9px 12px}
+.btn.small {font-size:15px;padding:10px 13px}
 
 /* PANELES */
 .panel {
@@ -146,7 +146,7 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
 .panel-title {
   display:flex;align-items:center;gap:10px;
   font-family:"Manrope",sans-serif;
-  font-size:17px;font-weight:800;margin:0 0 18px;
+  font-size:20px;font-weight:800;margin:0 0 18px;
 }
 .panel-title:before {
   content:"";width:5px;height:23px;
@@ -154,7 +154,7 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
 }
 .section-orange .panel-title:before {background:var(--orange)}
 .section-purple .panel-title:before {background:var(--purple)}
-.subtitle {font-size:12px;color:var(--muted);margin:-10px 0 17px}
+.subtitle {font-size:16px;color:var(--muted);margin:-10px 0 17px}
 
 /* ESTADÍSTICAS */
 .stats {
@@ -173,10 +173,10 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
   width:80px;height:80px;border-radius:50%;
   background:var(--accent);opacity:.08;
 }
-.stat span {display:block;color:var(--muted);font-size:12px;font-weight:600}
+.stat span {display:block;color:var(--muted);font-size:15px;font-weight:600}
 .stat strong {
   display:block;font-family:"Manrope",sans-serif;
-  font-size:22px;margin-top:9px;overflow-wrap:anywhere;
+  font-size:26px;margin-top:9px;overflow-wrap:anywhere;
 }
 .stat:nth-child(2) {border-bottom:3px solid #ef9845}
 .stat:nth-child(3) {border-bottom:3px solid #9874e8}
@@ -191,22 +191,23 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
   background:var(--card2);border-radius:12px;padding:12px;
 }
 .day-sums span {
-  display:block;color:var(--muted);font-size:13px;font-weight:700;
+  display:block;color:var(--muted);font-size:15px;font-weight:700;
   letter-spacing:.4px;
 }
 .day-sums strong {
-  display:block;margin-top:6px;font-size:20px;font-family:"Manrope",sans-serif;
+  display:block;margin-top:6px;font-size:22px;font-family:"Manrope",sans-serif;
 }
 
 /* FORMULARIOS */
 .grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .field {margin-bottom:14px}
 label {
-  display:block;font-size:12px;font-weight:700;
+  display:block;font-size:16px;font-weight:700;
   color:var(--muted);margin-bottom:7px;
 }
 input,select {
   width:100%;padding:13px 14px;
+  font-size:18px;
   border:1px solid var(--line);
   border-radius:12px;
   background:var(--card2);
@@ -222,7 +223,7 @@ input:focus,select:focus {
   background:linear-gradient(110deg,rgba(16,169,154,.10),rgba(16,169,154,.035));
   border:1px solid rgba(16,169,154,.2);
   padding:15px;border-radius:13px;
-  color:var(--text);font-size:13px;line-height:1.9;
+  color:var(--text);font-size:17px;line-height:1.9;
 }
 .calculation strong {color:var(--accent)}
 .rate-actions {display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -249,12 +250,12 @@ input:focus,select:focus {
 .icon-btn.add {font-weight:800;font-size:18px}
 .amount-row {display:flex;gap:8px;align-items:center}
 .amount-row input {flex:1;min-width:0;width:auto}
-.split-btn {font-weight:800;font-size:16px}
+.split-btn {width:48px;height:48px;font-weight:800;font-size:22px}
 .split-btn.active {background:var(--accent);border-color:var(--accent);color:#fff}
-.split-note {margin:8px 0 0;font-size:12px;font-weight:700;color:var(--accent);line-height:1.45}
-.split-detail {grid-column:1 / -1;font-size:15px}
+.split-note {margin:8px 0 0;font-size:16px;font-weight:700;color:var(--accent);line-height:1.45}
+.split-detail {grid-column:1 / -1;font-size:17px}
 .modal-card.split-card {width:min(520px,100%)}
-.split-total {margin:-4px 0 14px;font-size:14px}
+.split-total {margin:-4px 0 14px;font-size:18px}
 .split-total strong {color:var(--accent)}
 .modal {
   position:fixed;inset:0;z-index:40;
@@ -335,12 +336,12 @@ details[open] > .group-head:after {content:"−"}
 }
 .empty {
   text-align:center;color:var(--muted);
-  padding:24px 10px;font-size:13px;
+  padding:24px 10px;font-size:16px;
 }
 .badge {
   display:inline-block;border-radius:30px;
   padding:5px 9px;background:rgba(16,169,154,.11);
-  color:var(--accent);font-size:15px;font-weight:800;
+  color:var(--accent);font-size:16px;font-weight:800;
 }
 .danger {background:#d94c5b}
 
@@ -364,8 +365,8 @@ details[open] > .group-head:after {content:"−"}
   color:white;border:0;border-radius:8px;
 }
 .password-wrap input {padding-right:75px}
-.login-error {font-size:12px;color:#e05b68}
-.footer-note {text-align:center;color:var(--muted);font-size:11px;margin-top:22px}
+.login-error {font-size:15px;color:#e05b68}
+.footer-note {text-align:center;color:var(--muted);font-size:14px;margin-top:22px}
 
 @media(max-width:650px) {
   main {padding:0 12px 35px;margin-top:17px}
@@ -373,15 +374,15 @@ details[open] > .group-head:after {content:"−"}
   .logo {font-size:32px}
   .topbar {align-items:stretch}
   .tabs {display:grid;grid-template-columns:repeat(3,1fr);width:100%;gap:6px}
-  .tab {padding:11px 4px;font-size:11px}
+  .tab {padding:11px 4px;font-size:14px}
   .tools {justify-content:flex-end}
   .panel {padding:16px;border-radius:17px}
   .stats,.stats-4,.day-sums {gap:8px}
   .stats-4,.day-sums {grid-template-columns:repeat(2,minmax(0,1fr))}
   .day-sums {grid-template-columns:repeat(3,minmax(0,1fr))}
   .stat {padding:12px}
-  .stat strong {font-size:17px}
-  .stat span {font-size:10px}
+  .stat strong {font-size:22px}
+  .stat span {font-size:13px}
   .grid {grid-template-columns:1fr;gap:0}
   .client-line {align-items:center;flex-wrap:wrap;gap:8px}
   .client-name {width:100%}
@@ -601,15 +602,11 @@ details[open] > .group-head:after {content:"−"}
 <div id="splitModal" class="modal hidden">
   <div class="modal-card split-card">
     <h2 class="panel-title">Dividir venta</h2>
-    <p class="subtitle">Pasa una parte a otra comisión. El resto usa la comisión normal. Se guarda como una sola venta.</p>
+    <p class="subtitle">El monto que escribes usa 3.43%. El restante usa 2.85%. Se guarda como una sola venta.</p>
     <p class="split-total">Total de la venta: <strong id="splitTotal">S/ 0.00</strong></p>
     <div class="field">
-      <label>MONTO A PASAR (S/)</label>
+      <label>MONTO A 3.43% (S/)</label>
       <input id="splitSpecial" type="number" min="0.01" step="0.01" placeholder="Ej. 100.00">
-    </div>
-    <div class="field">
-      <label>COMISIÓN DE ESE MONTO (%)</label>
-      <input id="splitPercent" type="number" min="0" max="100" step="0.01" placeholder="Ej. 2.45">
     </div>
     <div class="calculation" id="splitPreview">
       Escribe el monto especial para calcular las dos partes.
@@ -639,17 +636,10 @@ details[open] > .group-head:after {content:"−"}
     </div>
     <div id="editSplit" class="hidden">
       <div class="field">
-        <label>MONTO A LA OTRA COMISIÓN (S/)</label>
+        <label>MONTO A 3.43% (S/)</label>
         <input id="editSpecialAmount" type="number" min="0.01" step="0.01">
       </div>
-      <div class="field">
-        <label>COMISIÓN DE ESE MONTO (%)</label>
-        <input id="editSpecialPercent" type="number" min="0" max="100" step="0.01">
-      </div>
-      <div class="field">
-        <label>COMISIÓN NORMAL DEL RESTANTE (%)</label>
-        <input id="editRemainPercent" type="number" min="0" max="100" step="0.01">
-      </div>
+      <p class="subtitle">El restante sigue en 2.85%.</p>
     </div>
     <div class="calculation" id="editPreview"></div>
     <p id="editError" class="login-error"></p>
@@ -670,7 +660,8 @@ const DEFAULT_RATES = [
   {id:"normal",name:"Normal",percent:2.85,locked:true},
   {id:"diners",name:"Diners / American Express",percent:3.43,locked:true}
 ];
-const SPLIT_DEFAULT_PERCENT = 2.45;
+const SPLIT_DINERS_RATE = 0.0343;
+const SPLIT_NORMAL_RATE = 0.0285;
 
 const clients = {
   "Benito A": {account:"7749",cta:"3032",refs:["R1","R2","R3"]},
@@ -825,8 +816,8 @@ function currentSplit() {
   return buildSplit(
     Number($("amount").value),
     pendingSplit.amount,
-    percentToRate(pendingSplit.percent),
-    normalRate()
+    SPLIT_DINERS_RATE,
+    SPLIT_NORMAL_RATE
   );
 }
 
@@ -870,8 +861,8 @@ function editDraft() {
   const split = buildSplit(
     amount,
     Number($("editSpecialAmount").value),
-    percentToRate($("editSpecialPercent").value),
-    percentToRate($("editRemainPercent").value)
+    SPLIT_DINERS_RATE,
+    SPLIT_NORMAL_RATE
   );
   return split ? {split:true, result:split} : null;
 }
@@ -880,7 +871,7 @@ function renderEditPreview() {
   const draft = editDraft();
   $("editError").textContent = "";
   if (!draft) {
-    $("editPreview").textContent = "Escribe un monto mayor que 0 y una comisión entre 0 y 100. En una división, el monto pasado debe ser menor que el total.";
+    $("editPreview").textContent = "Escribe un monto mayor que 0. En una división, el monto de 3.43% debe ser menor que el total.";
     return;
   }
   if (!draft.split) {
@@ -909,8 +900,6 @@ function editSale(id) {
   $("editSplit").classList.toggle("hidden", !divided);
   if (divided) {
     $("editSpecialAmount").value = String(sale.split.special.amount);
-    $("editSpecialPercent").value = formatPercent(sale.split.special.rate * 100);
-    $("editRemainPercent").value = formatPercent(sale.split.remaining.rate * 100);
   } else {
     $("editPercent").value = formatPercent((Number(sale.rate) || 0) * 100);
   }
@@ -1145,7 +1134,6 @@ function splitPreviewHtml(split) {
 function renderSplitPreview() {
   const total = Number($("amount").value);
   const special = Number($("splitSpecial").value);
-  const specialRate = percentToRate($("splitPercent").value);
   $("splitTotal").textContent = money(roundMoney(total));
   $("splitError").textContent = "";
   if (!Number.isFinite(total) || total <= 0) {
@@ -1153,7 +1141,7 @@ function renderSplitPreview() {
     return;
   }
   if (!String($("splitSpecial").value).trim()) {
-    $("splitPreview").textContent = "Escribe el monto que pasa a la otra comisión.";
+    $("splitPreview").textContent = "Escribe el monto que usa 3.43%. El restante usa 2.85%.";
     return;
   }
   if (!Number.isFinite(special) || special <= 0) {
@@ -1161,14 +1149,9 @@ function renderSplitPreview() {
     $("splitPreview").textContent = "Corrige el monto para ver el cálculo.";
     return;
   }
-  if (specialRate == null) {
-    $("splitError").textContent = "La comisión debe estar entre 0 y 100.";
-    $("splitPreview").textContent = "Corrige la comisión para ver el cálculo.";
-    return;
-  }
-  const split = buildSplit(total, special, specialRate, normalRate());
+  const split = buildSplit(total, special, SPLIT_DINERS_RATE, SPLIT_NORMAL_RATE);
   if (!split) {
-    $("splitError").textContent = "El monto a pasar debe ser menor que el total. El restante usa la comisión normal.";
+    $("splitError").textContent = "El monto de 3.43% debe ser menor que el total. El restante usa 2.85%.";
     $("splitPreview").textContent = "Corrige el monto para ver el cálculo.";
     return;
   }
@@ -1187,7 +1170,6 @@ function openSplitModal() {
     return;
   }
   $("splitSpecial").value = pendingSplit ? String(pendingSplit.amount) : "";
-  $("splitPercent").value = pendingSplit ? String(pendingSplit.percent) : String(SPLIT_DEFAULT_PERCENT);
   $("splitClear").classList.toggle("hidden", !pendingSplit);
   renderSplitPreview();
   $("splitModal").classList.remove("hidden");
@@ -1236,7 +1218,6 @@ $("amount").addEventListener("input",calculate);
 $("splitButton").addEventListener("click",openSplitModal);
 $("splitCancel").addEventListener("click",closeSplitModal);
 $("splitSpecial").addEventListener("input",renderSplitPreview);
-$("splitPercent").addEventListener("input",renderSplitPreview);
 $("splitClear").addEventListener("click",() => {
   clearPendingSplit();
   closeSplitModal();
@@ -1244,26 +1225,22 @@ $("splitClear").addEventListener("click",() => {
 $("splitApply").addEventListener("click",() => {
   const total = Number($("amount").value);
   const special = Number($("splitSpecial").value);
-  const specialRate = percentToRate($("splitPercent").value);
-  const split = buildSplit(total, special, specialRate, normalRate());
+  const split = buildSplit(total, special, SPLIT_DINERS_RATE, SPLIT_NORMAL_RATE);
   if (!split) {
     renderSplitPreview();
     if (!$("splitError").textContent) {
-      $("splitError").textContent = "Escribe un monto mayor que 0, menor que el total, y una comisión entre 0 y 100.";
+      $("splitError").textContent = "Escribe un monto de 3.43% mayor que 0 y menor que el total.";
     }
     return;
   }
-  pendingSplit = {
-    amount:split.special.amount,
-    percent:Math.round(split.special.rate * 10000) / 100
-  };
+  pendingSplit = {amount:split.special.amount};
   closeSplitModal();
   calculate();
 });
 $("splitModal").addEventListener("click",event => {
   if (event.target === $("splitModal")) closeSplitModal();
 });
-["editAmount","editPercent","editSpecialAmount","editSpecialPercent","editRemainPercent"].forEach(id => {
+["editAmount","editPercent","editSpecialAmount"].forEach(id => {
   $(id).addEventListener("input",renderEditPreview);
 });
 $("editCancel").addEventListener("click",closeEditModal);
