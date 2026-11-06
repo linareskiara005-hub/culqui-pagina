@@ -257,6 +257,8 @@ input:focus,select:focus {
 .modal-card.split-card {width:min(520px,100%)}
 .split-total {margin:-4px 0 14px;font-size:18px}
 .split-total strong {color:var(--accent)}
+.choice-row {display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:0}
+.choice-row .btn {width:100%}
 .modal {
   position:fixed;inset:0;z-index:40;
   background:rgba(16,36,58,.48);
@@ -602,11 +604,18 @@ details[open] > .group-head:after {content:"−"}
 <div id="splitModal" class="modal hidden">
   <div class="modal-card split-card">
     <h2 class="panel-title">Dividir venta</h2>
-    <p class="subtitle">El monto que escribes usa 3.43%. El restante usa 2.85%. Se guarda como una sola venta.</p>
+    <p class="subtitle">Elige si ese monto usa Normal o American. El restante usa la otra. Se guarda como una sola venta.</p>
     <p class="split-total">Total de la venta: <strong id="splitTotal">S/ 0.00</strong></p>
     <div class="field">
-      <label>MONTO A 3.43% (S/)</label>
+      <label>MONTO A PASAR (S/)</label>
       <input id="splitSpecial" type="number" min="0.01" step="0.01" placeholder="Ej. 100.00">
+    </div>
+    <div class="field">
+      <label>COMISIÓN DE ESE MONTO</label>
+      <div class="choice-row" id="splitChoice">
+        <button type="button" class="btn gray small split-choice" data-choice="normal">Normal 2.85%</button>
+        <button type="button" class="btn gray small split-choice" data-choice="diners">American 3.43%</button>
+      </div>
     </div>
     <div class="calculation" id="splitPreview">
       Escribe el monto especial para calcular las dos partes.
@@ -636,10 +645,16 @@ details[open] > .group-head:after {content:"−"}
     </div>
     <div id="editSplit" class="hidden">
       <div class="field">
-        <label>MONTO A 3.43% (S/)</label>
+        <label>MONTO DIVIDIDO (S/)</label>
         <input id="editSpecialAmount" type="number" min="0.01" step="0.01">
       </div>
-      <p class="subtitle">El restante sigue en 2.85%.</p>
+      <div class="field">
+        <label>COMISIÓN DE ESE MONTO</label>
+        <div class="choice-row" id="editChoice">
+          <button type="button" class="btn gray small split-choice" data-choice="normal">Normal 2.85%</button>
+          <button type="button" class="btn gray small split-choice" data-choice="diners">American 3.43%</button>
+        </div>
+      </div>
     </div>
     <div class="calculation" id="editPreview"></div>
     <p id="editError" class="login-error"></p>
@@ -810,14 +825,35 @@ function buildSplit(totalAmount, specialAmount, specialRate, remainingRate) {
 }
 
 let pendingSplit = null;
+let splitChoice = "diners";
+let editSplitChoice = "diners";
+
+function ratesFor(choice) {
+  if (choice === "normal") return {special:SPLIT_NORMAL_RATE, remaining:SPLIT_DINERS_RATE};
+  return {special:SPLIT_DINERS_RATE, remaining:SPLIT_NORMAL_RATE};
+}
+
+function rateLabel(rate) {
+  const value = Number(rate) || 0;
+  if (Math.abs(value - SPLIT_NORMAL_RATE) < 0.000001) return "Normal 2.85%";
+  if (Math.abs(value - SPLIT_DINERS_RATE) < 0.000001) return "American 3.43%";
+  return formatPercent(value * 100) + "%";
+}
+
+function markChoice(groupId, choice) {
+  document.querySelectorAll("#" + groupId + " [data-choice]").forEach(button => {
+    button.classList.toggle("gray", button.dataset.choice !== choice);
+  });
+}
 
 function currentSplit() {
   if (!pendingSplit) return null;
+  const rates = ratesFor(pendingSplit.choice);
   return buildSplit(
     Number($("amount").value),
     pendingSplit.amount,
-    SPLIT_DINERS_RATE,
-    SPLIT_NORMAL_RATE
+    rates.special,
+    rates.remaining
   );
 }
 
@@ -827,7 +863,7 @@ function writeSplitSale(sale, split) {
   sale.net = split.net;
   sale.deposit = split.deposit;
   sale.rate = split.remaining.rate;
-  sale.card = "División " + formatPercent(split.special.rate * 100) + "% / Normal " + formatPercent(split.remaining.rate * 100) + "%";
+  sale.card = "División " + rateLabel(split.special.rate) + " / " + rateLabel(split.remaining.rate);
   sale.split = {special:split.special, remaining:split.remaining};
 }
 
@@ -858,11 +894,12 @@ function editDraft() {
     const net = roundMoney(rounded - commission);
     return {split:false, amount:rounded, rate, commission, net};
   }
+  const rates = ratesFor(editSplitChoice);
   const split = buildSplit(
     amount,
     Number($("editSpecialAmount").value),
-    SPLIT_DINERS_RATE,
-    SPLIT_NORMAL_RATE
+    rates.special,
+    rates.remaining
   );
   return split ? {split:true, result:split} : null;
 }
@@ -871,7 +908,7 @@ function renderEditPreview() {
   const draft = editDraft();
   $("editError").textContent = "";
   if (!draft) {
-    $("editPreview").textContent = "Escribe un monto mayor que 0. En una división, el monto de 3.43% debe ser menor que el total.";
+    $("editPreview").textContent = "Escribe un monto mayor que 0. En una división, el monto elegido debe ser menor que el total.";
     return;
   }
   if (!draft.split) {
@@ -900,6 +937,8 @@ function editSale(id) {
   $("editSplit").classList.toggle("hidden", !divided);
   if (divided) {
     $("editSpecialAmount").value = String(sale.split.special.amount);
+    editSplitChoice = Math.abs(Number(sale.split.special.rate) - SPLIT_NORMAL_RATE) < 0.000001 ? "normal" : "diners";
+    markChoice("editChoice", editSplitChoice);
   } else {
     $("editPercent").value = formatPercent((Number(sale.rate) || 0) * 100);
   }
@@ -1109,7 +1148,7 @@ function updateSplitUi() {
   button.classList.toggle("active", !!split);
   if (split) {
     note.classList.remove("hidden");
-    note.textContent = "División lista: " + money(split.special.amount) + " al " + formatPercent(split.special.rate * 100) + "% · restante " + money(split.remaining.amount) + " con comisión normal " + formatPercent(split.remaining.rate * 100) + "%. Una sola venta.";
+    note.textContent = "División lista: " + money(split.special.amount) + " en " + rateLabel(split.special.rate) + " · restante " + money(split.remaining.amount) + " en " + rateLabel(split.remaining.rate) + ". Una sola venta.";
     return;
   }
   if (pendingSplit) {
@@ -1123,8 +1162,8 @@ function updateSplitUi() {
 
 function splitPreviewHtml(split) {
   return `
-    Pasado ${money(split.special.amount)} · ${formatPercent(split.special.rate * 100)}%: comisión <strong>${money(split.special.commission)}</strong> · depósito <strong>${money(split.special.deposit)}</strong><br>
-    Restante ${money(split.remaining.amount)} · normal ${formatPercent(split.remaining.rate * 100)}%: comisión <strong>${money(split.remaining.commission)}</strong> · depósito <strong>${money(split.remaining.deposit)}</strong><br>
+    Pasado ${money(split.special.amount)} · ${rateLabel(split.special.rate)}: comisión <strong>${money(split.special.commission)}</strong> · depósito <strong>${money(split.special.deposit)}</strong><br>
+    Restante ${money(split.remaining.amount)} · ${rateLabel(split.remaining.rate)}: comisión <strong>${money(split.remaining.commission)}</strong> · depósito <strong>${money(split.remaining.deposit)}</strong><br>
     Total comisión: <strong>${money(split.commission)}</strong><br>
     Total depósito: <strong>${money(split.deposit)}</strong><br>
     Total venta: <strong>${money(roundMoney(split.special.amount + split.remaining.amount))}</strong>
@@ -1141,7 +1180,7 @@ function renderSplitPreview() {
     return;
   }
   if (!String($("splitSpecial").value).trim()) {
-    $("splitPreview").textContent = "Escribe el monto que usa 3.43%. El restante usa 2.85%.";
+    $("splitPreview").textContent = "Escribe el monto y elige Normal o American.";
     return;
   }
   if (!Number.isFinite(special) || special <= 0) {
@@ -1149,9 +1188,10 @@ function renderSplitPreview() {
     $("splitPreview").textContent = "Corrige el monto para ver el cálculo.";
     return;
   }
-  const split = buildSplit(total, special, SPLIT_DINERS_RATE, SPLIT_NORMAL_RATE);
+  const rates = ratesFor(splitChoice);
+  const split = buildSplit(total, special, rates.special, rates.remaining);
   if (!split) {
-    $("splitError").textContent = "El monto de 3.43% debe ser menor que el total. El restante usa 2.85%.";
+    $("splitError").textContent = "Ese monto debe ser menor que el total. El restante usa la otra comisión.";
     $("splitPreview").textContent = "Corrige el monto para ver el cálculo.";
     return;
   }
@@ -1169,6 +1209,8 @@ function openSplitModal() {
     $("amount").focus();
     return;
   }
+  splitChoice = pendingSplit && pendingSplit.choice ? pendingSplit.choice : "diners";
+  markChoice("splitChoice", splitChoice);
   $("splitSpecial").value = pendingSplit ? String(pendingSplit.amount) : "";
   $("splitClear").classList.toggle("hidden", !pendingSplit);
   renderSplitPreview();
@@ -1218,6 +1260,20 @@ $("amount").addEventListener("input",calculate);
 $("splitButton").addEventListener("click",openSplitModal);
 $("splitCancel").addEventListener("click",closeSplitModal);
 $("splitSpecial").addEventListener("input",renderSplitPreview);
+$("splitChoice").addEventListener("click", event => {
+  const button = event.target.closest("[data-choice]");
+  if (!button) return;
+  splitChoice = button.dataset.choice;
+  markChoice("splitChoice", splitChoice);
+  renderSplitPreview();
+});
+$("editChoice").addEventListener("click", event => {
+  const button = event.target.closest("[data-choice]");
+  if (!button) return;
+  editSplitChoice = button.dataset.choice;
+  markChoice("editChoice", editSplitChoice);
+  renderEditPreview();
+});
 $("splitClear").addEventListener("click",() => {
   clearPendingSplit();
   closeSplitModal();
@@ -1225,15 +1281,16 @@ $("splitClear").addEventListener("click",() => {
 $("splitApply").addEventListener("click",() => {
   const total = Number($("amount").value);
   const special = Number($("splitSpecial").value);
-  const split = buildSplit(total, special, SPLIT_DINERS_RATE, SPLIT_NORMAL_RATE);
+  const rates = ratesFor(splitChoice);
+  const split = buildSplit(total, special, rates.special, rates.remaining);
   if (!split) {
     renderSplitPreview();
     if (!$("splitError").textContent) {
-      $("splitError").textContent = "Escribe un monto de 3.43% mayor que 0 y menor que el total.";
+      $("splitError").textContent = "Escribe un monto mayor que 0 y menor que el total.";
     }
     return;
   }
-  pendingSplit = {amount:split.special.amount};
+  pendingSplit = {amount:split.special.amount, choice:splitChoice};
   closeSplitModal();
   calculate();
 });
@@ -1409,8 +1466,8 @@ function renderSales(sales,target) {
       const row = document.createElement("div");
       row.className = "sale-row";
       const splitHtml = s.split ? `
-        <div class="split-detail"><span>Pasado ${money(s.split.special.amount)} · ${formatPercent(s.split.special.rate * 100)}%:</span> <b>comisión ${money(s.split.special.commission)} · depósito ${money(s.split.special.deposit)}</b></div>
-        <div class="split-detail"><span>Restante ${money(s.split.remaining.amount)} · normal ${formatPercent(s.split.remaining.rate * 100)}%:</span> <b>comisión ${money(s.split.remaining.commission)} · depósito ${money(s.split.remaining.deposit)}</b></div>
+        <div class="split-detail"><span>Pasado ${money(s.split.special.amount)} · ${rateLabel(s.split.special.rate)}:</span> <b>comisión ${money(s.split.special.commission)} · depósito ${money(s.split.special.deposit)}</b></div>
+        <div class="split-detail"><span>Restante ${money(s.split.remaining.amount)} · ${rateLabel(s.split.remaining.rate)}:</span> <b>comisión ${money(s.split.remaining.commission)} · depósito ${money(s.split.remaining.deposit)}</b></div>
       ` : "";
       row.innerHTML = `
         <div><span>Fecha y hora:</span> <b>${dateTime(s.time)}</b></div>
