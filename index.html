@@ -393,7 +393,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 .ref-card-top {display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
 .ref-card-top strong {font-size:20px}
 .ref-card-top span {color:var(--muted);font-size:16px;font-weight:700}
-.ref-metrics {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:8px 0}
+.ref-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
 .ref-metrics span {display:block;color:var(--muted);font-size:15px;font-weight:700}
 .ref-metrics b {font-size:19px}
 .ref-bank {display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -476,7 +476,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
   .panel {padding:16px;border-radius:17px}
   .stats,.stats-4,.day-sums {gap:8px}
   .stats-4,.stats-5,.stats-day,.day-sums {grid-template-columns:repeat(2,minmax(0,1fr))}
-  .ref-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ref-metrics {grid-template-columns:1fr}
   .day-sums {grid-template-columns:repeat(3,minmax(0,1fr))}
   .stat {padding:12px}
   .stat strong {font-size:24px}
@@ -2195,20 +2195,17 @@ function renderHistory() {
     });
     const bankNode = document.createElement("strong");
     const diffNode = document.createElement("strong");
-    const percentNode = document.createElement("strong");
     const sums = document.createElement("div");
-    sums.className = "stats stats-5 stats-day";
+    sums.className = "stats stats-5";
     sums.innerHTML = `
       <div class="stat"><span>TOTAL VENDIDO</span><strong>${money(t.sales)}</strong></div>
       <div class="stat"><span>COMISIONES</span><strong>${money(t.commission)}</strong></div>
       <div class="stat"><span>DEPÓSITO</span><strong>${money(t.net)}</strong></div>
       <div class="stat"><span>BANCO</span></div>
       <div class="stat"><span>DIFERENCIA</span></div>
-      <div class="stat"><span>PORCENTAJE DE LA DIFERENCIA</span></div>
     `;
     sums.children[3].appendChild(bankNode);
     sums.children[4].appendChild(diffNode);
-    sums.children[5].appendChild(percentNode);
     day.appendChild(sums);
 
     function paintDay() {
@@ -2223,9 +2220,9 @@ function renderHistory() {
       sum = Math.round(sum * 100) / 100;
       bankNode.textContent = any ? money(sum) : "—";
       const gap = complete && any ? bankGap(t.sales, sum) : null;
-      diffNode.textContent = gap == null ? "—" : signedMoney(gap);
+      const percent = diffPercent(t.sales, t.net);
+      diffNode.textContent = percentText(percent) + (gap == null ? "" : " · " + signedMoney(gap));
       diffNode.className = gap == null ? "" : gap > 0 ? "down" : gap < 0 ? "up" : "";
-      percentNode.textContent = percentText(diffPercent(t.sales, t.net));
     }
 
     groups.forEach((group, index) => {
@@ -2244,7 +2241,6 @@ function renderHistory() {
           <div><span>VENDIDO</span><b>${money(gt.sales)}</b></div>
           <div><span>COMISIÓN</span><b>${money(gt.commission)}</b></div>
           <div><span>DEPÓSITO</span><b>${money(gt.net)}</b></div>
-          <div><span>PORCENTAJE DE LA DIFERENCIA</span><b>${percentText(percent)}</b></div>
         </div>
       `;
       const bankRow = document.createElement("div");
@@ -2280,7 +2276,7 @@ function renderHistory() {
             paintDay();
           });
           bankRow.append(label, input, accept, diff);
-          diff.textContent = "Acepta el banco de este POS para ver la diferencia.";
+          diff.textContent = "Diferencia " + percentText(percent) + ". Acepta el banco de este POS.";
           diff.className = "ref-diff";
           return;
         }
@@ -2298,7 +2294,7 @@ function renderHistory() {
           paintDay();
         });
         const gap = bankGap(gt.sales, savedBank);
-        diff.textContent = "Diferencia " + signedMoney(gap) + " · Porcentaje de la diferencia " + percentText(percent);
+        diff.textContent = "Diferencia " + signedMoney(gap) + " · " + percentText(percent);
         diff.className = "ref-diff " + (gap > 0 ? "down" : gap < 0 ? "up" : "");
         bankRow.append(fixed, remove, diff);
       };
