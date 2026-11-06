@@ -72,43 +72,43 @@ button {cursor:pointer}
     radial-gradient(circle at 85% 15%,rgba(34,211,190,.22),transparent 30%),
     linear-gradient(130deg,#101c32,#173c57 65%,#087f78);
   color:white;
-  padding:28px 18px 35px;
-  border-radius:0 0 30px 30px;
+  padding:14px 16px 16px;
+  border-radius:0 0 18px 18px;
   position:relative;
   overflow:hidden;
 }
 .hero-inner {max-width:1080px;margin:auto;text-align:center}
 .logo {
   font-family:"Manrope",sans-serif;
-  font-size:37px;
+  font-size:32px;
   font-weight:800;
-  letter-spacing:9px;
+  letter-spacing:7px;
   margin:0;
 }
 .logo-sub {
   font-size:10px;
   letter-spacing:3px;
   color:#c7e8e7;
-  margin:7px 0 0;
+  margin:4px 0 0;
 }
 .hero-line {
   width:45px;height:3px;background:#39d6c2;
-  border-radius:10px;margin:16px auto 0;
+  border-radius:10px;margin:8px auto 0;
 }
 
 /* CONTENIDO */
-main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
+main {max-width:1080px;margin:12px auto;padding:0 14px 20px}
 .topbar {
   display:flex;justify-content:space-between;align-items:center;
-  flex-wrap:wrap;gap:13px;margin-bottom:20px;
+  flex-wrap:wrap;gap:8px;margin-bottom:10px;
 }
 .tabs {display:flex;gap:9px;flex-wrap:wrap}
 .tab {
   border:1px solid var(--line);
   background:var(--card);
   color:var(--muted);
-  padding:12px 17px;
-  border-radius:13px;
+  padding:9px 14px;
+  border-radius:12px;
   font-weight:700;
   font-size:16px;
   box-shadow:0 3px 12px rgba(20,40,70,.03);
@@ -138,15 +138,15 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
 .panel {
   background:var(--card);
   border:1px solid var(--line);
-  border-radius:20px;
-  padding:21px;
-  margin-bottom:17px;
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:10px;
   box-shadow:var(--shadow);
 }
 .panel-title {
   display:flex;align-items:center;gap:10px;
   font-family:"Manrope",sans-serif;
-  font-size:20px;font-weight:800;margin:0 0 18px;
+  font-size:18px;font-weight:800;margin:0 0 10px;
 }
 .panel-title:before {
   content:"";width:5px;height:23px;
@@ -154,18 +154,18 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
 }
 .section-orange .panel-title:before {background:var(--orange)}
 .section-purple .panel-title:before {background:var(--purple)}
-.subtitle {font-size:16px;color:var(--muted);margin:-10px 0 17px}
+.subtitle {font-size:16px;color:var(--muted);margin:-4px 0 10px}
 
 /* ESTADÍSTICAS */
 .stats {
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:13px;margin-bottom:17px;
+  gap:8px;margin-bottom:8px;
 }
 .stat {
   position:relative;overflow:hidden;
   background:var(--card);
   border:1px solid var(--line);
-  border-radius:17px;padding:17px;
+  border-radius:14px;padding:10px 12px;
   box-shadow:var(--shadow);
 }
 .stat:after {
@@ -176,7 +176,7 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
 .stat span {display:block;color:var(--muted);font-size:15px;font-weight:600}
 .stat strong {
   display:block;font-family:"Manrope",sans-serif;
-  font-size:26px;margin-top:9px;overflow-wrap:anywhere;
+  font-size:22px;margin-top:4px;overflow-wrap:anywhere;
 }
 .stat:nth-child(2) {border-bottom:3px solid #ef9845}
 .stat:nth-child(3) {border-bottom:3px solid #9874e8}
@@ -184,8 +184,8 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
 .stats-4 .stat:nth-child(3) {border-bottom:3px solid #10a99a}
 .stats-4 .stat:nth-child(4) {border-bottom:3px solid #9874e8}
 .day-sums {
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:10px;margin:0 0 14px;
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;margin:0 0 10px;
 }
 .day-sums div {
   background:var(--card2);border-radius:12px;padding:12px;
@@ -199,8 +199,8 @@ main {max-width:1080px;margin:24px auto;padding:0 16px 45px}
 }
 
 /* FORMULARIOS */
-.grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.field {margin-bottom:14px}
+.grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.field {margin-bottom:8px}
 label {
   display:block;font-size:16px;font-weight:700;
   color:var(--muted);margin-bottom:7px;
@@ -222,8 +222,8 @@ input:focus,select:focus {
 .calculation {
   background:linear-gradient(110deg,rgba(16,169,154,.10),rgba(16,169,154,.035));
   border:1px solid rgba(16,169,154,.2);
-  padding:15px;border-radius:13px;
-  color:var(--text);font-size:17px;line-height:1.9;
+  padding:10px 12px;border-radius:12px;
+  color:var(--text);font-size:17px;line-height:1.55;
 }
 .calculation strong {color:var(--accent)}
 .rate-actions {display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -233,7 +233,7 @@ input:focus,select:focus {
 .client-line {
   display:flex;align-items:center;justify-content:space-between;
   flex-wrap:wrap;gap:10px;
-  padding:16px 4px;border-bottom:1px solid var(--line);
+  padding:8px 4px;border-bottom:1px solid var(--line);
   font-size:18px;
 }
 .client-block:last-child .client-line {border-bottom:0}
@@ -368,12 +368,24 @@ details[open] > .group-head:after {content:"−"}
 }
 .password-wrap input {padding-right:75px}
 .login-error {font-size:15px;color:#e05b68}
-.footer-note {text-align:center;color:var(--muted);font-size:14px;margin-top:22px}
+.footer-note {text-align:center;color:var(--muted);font-size:14px;margin-top:8px}
+.net-box {
+  display:grid;grid-template-columns:1.1fr 1.3fr 1.2fr;
+  gap:8px;margin:0 0 10px;
+  background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:10px 12px;
+}
+.net-box span,.net-box label {
+  display:block;color:var(--muted);font-size:14px;font-weight:700;margin-bottom:4px;
+}
+.net-box strong {display:block;font-family:"Manrope",sans-serif;font-size:22px}
+.net-box input {padding:8px 10px}
+.sync-status {font-size:13px;font-weight:700;color:var(--muted);align-self:center}
 
 @media(max-width:650px) {
-  main {padding:0 12px 35px;margin-top:17px}
-  .hero {padding:24px 12px 30px}
-  .logo {font-size:32px}
+  main {padding:0 12px 16px;margin-top:10px}
+  .hero {padding:12px 12px 14px}
+  .logo {font-size:28px}
   .topbar {align-items:stretch}
   .tabs {display:grid;grid-template-columns:repeat(3,1fr);width:100%;gap:6px}
   .tab {padding:11px 4px;font-size:14px}
@@ -385,7 +397,8 @@ details[open] > .group-head:after {content:"−"}
   .stat {padding:12px}
   .stat strong {font-size:22px}
   .stat span {font-size:13px}
-  .grid {grid-template-columns:1fr;gap:0}
+  .grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .net-box strong {font-size:16px}
   .client-line {align-items:center;flex-wrap:wrap;gap:8px}
   .client-name {width:100%}
   .row-actions {margin-left:auto}
@@ -439,6 +452,7 @@ details[open] > .group-head:after {content:"−"}
         <button class="tab purple" data-page="history">◷ Historial</button>
       </nav>
       <div class="tools">
+        <span id="syncStatus" class="sync-status"></span>
         <button class="btn gray small" id="themeButton">☾ Oscuro</button>
       </div>
     </div>
@@ -449,6 +463,20 @@ details[open] > .group-head:after {content:"−"}
         <div class="stat"><span>VENTAS DE ESTA CAJA</span><strong id="totalSales">S/ 0.00</strong></div>
         <div class="stat"><span>COMISIONES</span><strong id="totalCommission">S/ 0.00</strong></div>
         <div class="stat"><span>DEPÓSITO NETO</span><strong id="totalNet">S/ 0.00</strong></div>
+      </div>
+      <div class="net-box">
+        <div>
+          <span>NETO CALCULADO</span>
+          <strong id="calculatedNet">S/ 0.00</strong>
+        </div>
+        <div>
+          <label for="receivedNet">NETO RECIBIDO</label>
+          <input id="receivedNet" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Lo que llegó">
+        </div>
+        <div>
+          <span>DIFERENCIA DE COMISIÓN</span>
+          <strong id="netDifference">—</strong>
+        </div>
       </div>
 
       <div class="panel">
@@ -504,7 +532,7 @@ details[open] > .group-head:after {content:"−"}
             Neto: <strong>S/ 0.00</strong><br>
             Depósito: <strong>S/ 0.00</strong>
           </div>
-          <div style="margin-top:17px">
+          <div style="margin-top:10px">
             <button class="btn" type="submit">＋ GUARDAR VENTA</button>
           </div>
         </form>
@@ -534,8 +562,13 @@ details[open] > .group-head:after {content:"−"}
           <div class="stat"><span>COMISIONES</span><strong id="closeCommission">S/ 0.00</strong></div>
           <div class="stat"><span>DEPÓSITO NETO</span><strong id="closeNet">S/ 0.00</strong></div>
         </div>
+        <div class="net-box">
+          <div><span>NETO CALCULADO</span><strong id="closeCalculated">S/ 0.00</strong></div>
+          <div><span>NETO RECIBIDO</span><strong id="closeReceived">—</strong></div>
+          <div><span>DIFERENCIA DE COMISIÓN</span><strong id="closeDifference">—</strong></div>
+        </div>
 
-        <h3 style="font-size:14px;margin:22px 0 10px">Totales por cliente y referencia</h3>
+        <h3 style="font-size:14px;margin:12px 0 8px">Totales por cliente y referencia</h3>
         <div id="closingBreakdown"></div>
 
         <div class="field" style="margin-top:20px">
@@ -550,13 +583,9 @@ details[open] > .group-head:after {content:"−"}
     <!-- HISTORIAL -->
     <section id="historyPage" class="hidden section-purple">
       <div class="panel">
-        <h2 class="panel-title">Historial por día</h2>
-        <div class="stats stats-4">
-          <div class="stat"><span>DÍAS</span><strong id="historyCount">0</strong></div>
-          <div class="stat"><span>VENTAS</span><strong id="historySales">S/ 0.00</strong></div>
-          <div class="stat"><span>COMISIONES</span><strong id="historyCommission">S/ 0.00</strong></div>
-          <div class="stat"><span>DEPÓSITO</span><strong id="historyNet">S/ 0.00</strong></div>
-        </div>
+        <h2 class="panel-title">Historial por cierre</h2>
+        <p class="subtitle">Cada cierre suma solo ese día. Un día no se mezcla con el siguiente.</p>
+        <p class="subtitle" id="historyCountLine">0 cierres</p>
         <div id="historyList"></div>
       </div>
     </section>
@@ -671,6 +700,10 @@ details[open] > .group-head:after {content:"−"}
 const STORAGE_KEY = "CULQUI_CAJAS_V3";
 const THEME_KEY = "CULQUI_DARK";
 const RATES_KEY = "CULQUI_RATES_V1";
+const SESSION_KEY = "CULQUI_USER";
+const SYNC_BASE = "https://mantledb.sh/v2/culqui-ceo-7f3a9c";
+const SYNC_KEY = "0207566dfc3373b7e0bdbcd992e1973c2ae76d0c177fdf26fe40e51eda79824e";
+let syncReady = false;
 const DEFAULT_RATES = [
   {id:"normal",name:"Normal",percent:2.85,locked:true},
   {id:"diners",name:"Diners / American Express",percent:3.43,locked:true}
@@ -947,14 +980,27 @@ function editSale(id) {
   $("editAmount").focus();
 }
 
+function rememberDelete(id) {
+  if (id == null) return;
+  if (!Array.isArray(data.deletedIds)) data.deletedIds = [];
+  const key = String(id);
+  if (!data.deletedIds.includes(key)) data.deletedIds.push(key);
+  if (data.deletedIds.length > 500) data.deletedIds = data.deletedIds.slice(-500);
+}
+
 function deleteSale(id) {
   if (!confirm("¿Borrar esta venta?")) return;
+  rememberDelete(id);
   data.current.sales = (data.current.sales || []).filter(sale => sale.id !== id);
   data.history.forEach(close => {
     close.sales = (close.sales || []).filter(sale => sale.id !== id);
     close.totals = totals(close.sales);
   });
-  data.history = data.history.filter(close => (close.sales || []).length);
+  data.history = data.history.filter(close => {
+    const keep = (close.sales || []).length > 0;
+    if (!keep) rememberDelete(close.id);
+    return keep;
+  });
   saveData();
   render();
 }
@@ -1040,6 +1086,7 @@ $("addSaleForm").addEventListener("submit",event => {
   const net = Math.round((rounded - commission) * 100) / 100;
   const sale = {
     id:Date.now(),
+    editedAt:now(),
     time:timeOnSameDay(found.sale.time),
     client,
     reference,
@@ -1065,8 +1112,220 @@ $("addSaleForm").addEventListener("submit",event => {
   render();
 });
 
-function saveData() {
+function persistLocal() {
   localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+}
+
+function saveData() {
+  data.revision = Date.now();
+  persistLocal();
+  schedulePush();
+}
+
+function setSyncStatus(text) {
+  const node = $("syncStatus");
+  if (node) node.textContent = text;
+}
+
+function hasMoves(box) {
+  return !!((box.current && box.current.sales && box.current.sales.length) || (box.history && box.history.length));
+}
+
+async function mantle(path, method, body) {
+  const response = await fetch(SYNC_BASE + "/" + path, {
+    method: method || "GET",
+    cache:"no-store",
+    headers:{
+      "Content-Type":"application/json",
+      "X-Mantle-Key":SYNC_KEY
+    },
+    body:body == null ? undefined : JSON.stringify(body)
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(String(response.status));
+  if ((method || "GET") === "GET") return response.json();
+  return true;
+}
+
+function packHistory(history) {
+  const chunks = [];
+  let buf = [];
+  let size = 2;
+  (history || []).forEach(close => {
+    const text = JSON.stringify(close);
+    if (buf.length && size + text.length + 1 > 45000) {
+      chunks.push(buf);
+      buf = [];
+      size = 2;
+    }
+    buf.push(close);
+    size += text.length + 1;
+  });
+  if (buf.length) chunks.push(buf);
+  return chunks;
+}
+
+async function pullRemote() {
+  const meta = await mantle("meta");
+  if (!meta || meta.revision == null || meta.chunkCount == null) return null;
+  const current = await mantle("live");
+  if (!current || !Array.isArray(current.sales)) return null;
+  const history = [];
+  const count = Number(meta.chunkCount) || 0;
+  for (let i = 0; i < count; i++) {
+    const part = await mantle("chunk/" + i);
+    if (Array.isArray(part)) history.push(...part);
+  }
+  return {
+    revision:meta.revision || 0,
+    current,
+    history,
+    deletedIds:meta.deletedIds || []
+  };
+}
+
+function mergeSnapshots(a, b) {
+  const deleted = new Set([...(a.deletedIds || []), ...(b.deletedIds || [])].map(String));
+  const history = new Map();
+  [...(b.history || []), ...(a.history || [])].forEach(close => {
+    if (!close || deleted.has(String(close.id))) return;
+    const prev = history.get(String(close.id));
+    const stamp = item => item.closedAt || item.openedAt || "";
+    if (!prev || stamp(close) >= stamp(prev)) history.set(String(close.id), close);
+  });
+  const closedSaleIds = new Set();
+  history.forEach(close => (close.sales || []).forEach(sale => closedSaleIds.add(String(sale.id))));
+  const sales = new Map();
+  const takeSales = list => (list || []).forEach(sale => {
+    if (!sale || deleted.has(String(sale.id)) || closedSaleIds.has(String(sale.id))) return;
+    const prev = sales.get(String(sale.id));
+    const stamp = item => item.editedAt || item.time || "";
+    if (!prev || stamp(sale) >= stamp(prev)) sales.set(String(sale.id), sale);
+  });
+  takeSales(b.current && b.current.sales);
+  takeSales(a.current && a.current.sales);
+  const newer = (a.revision || 0) >= (b.revision || 0) ? a : b;
+  const other = newer === a ? b : a;
+  const current = Object.assign({}, newer.current || emptyCash());
+  current.sales = [...sales.values()];
+  if ((other.current && other.current.receivedAt || 0) > (current.receivedAt || 0)) {
+    current.receivedNet = other.current.receivedNet;
+    current.receivedAt = other.current.receivedAt;
+  }
+  return {
+    current,
+    history:[...history.values()].sort((x, y) => String(y.closedAt || "").localeCompare(String(x.closedAt || ""))),
+    deletedIds:[...deleted].slice(-500),
+    revision:Math.max(a.revision || 0, b.revision || 0)
+  };
+}
+
+async function uploadData(box) {
+  const chunks = packHistory(box.history || []);
+  for (let i = 0; i < chunks.length; i++) await mantle("chunk/" + i, "POST", chunks[i]);
+  for (let i = chunks.length; i < chunks.length + 6; i++) {
+    try { await mantle("chunk/" + i, "DELETE"); } catch (e) {}
+  }
+  await mantle("live", "POST", box.current);
+  await mantle("meta", "POST", {
+    revision:box.revision || 0,
+    chunkCount:chunks.length,
+    deletedIds:box.deletedIds || []
+  });
+}
+
+let pushing = false;
+let pushAgain = false;
+
+async function pushNow() {
+  if (pushing) {
+    pushAgain = true;
+    return;
+  }
+  pushing = true;
+  setSyncStatus("Guardando…");
+  try {
+    const remote = await pullRemote();
+    if (remote && (remote.revision || 0) > (data.revision || 0)) {
+      data = mergeSnapshots(data, remote);
+      data.revision = Date.now();
+      persistLocal();
+      render();
+    }
+    await uploadData(data);
+    setSyncStatus("Sincronizado");
+  } catch (e) {
+    setSyncStatus("Sin conexión. Guardado en este equipo.");
+  } finally {
+    pushing = false;
+    if (pushAgain) {
+      pushAgain = false;
+      pushNow();
+    }
+  }
+}
+
+let pushTimer = 0;
+function schedulePush() {
+  if (!syncReady) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => { pushNow(); }, 600);
+}
+
+async function pullIfNewer() {
+  const active = document.activeElement;
+  if (active && ["INPUT","SELECT","TEXTAREA"].includes(active.tagName)) return;
+  try {
+    const remote = await pullRemote();
+    if (remote && (remote.revision || 0) > (data.revision || 0)) {
+      data = remote;
+      persistLocal();
+      render();
+      setSyncStatus("Actualizado desde otro equipo");
+    }
+  } catch (e) {}
+}
+
+async function reconcile() {
+  const remote = await pullRemote();
+  if (!remote) {
+    if (hasMoves(data) || data.revision) await pushNow();
+    return;
+  }
+  const localRev = data.revision || 0;
+  const remoteRev = remote.revision || 0;
+  if (localRev === 0 && hasMoves(data)) {
+    data = mergeSnapshots(data, remote);
+    data.revision = Date.now();
+    persistLocal();
+    await pushNow();
+  } else if (remoteRev > localRev) {
+    data = remote;
+    persistLocal();
+  } else if (localRev > remoteRev) {
+    await pushNow();
+  }
+}
+
+let syncStarted = false;
+function startSync() {
+  if (syncStarted) return;
+  syncStarted = true;
+  reconcile().then(() => {
+    syncReady = true;
+    render();
+    setSyncStatus("Sincronizado");
+  }).catch(() => {
+    syncReady = true;
+    setSyncStatus("Sin conexión. Guardado en este equipo.");
+  });
+  setInterval(() => {
+    if (document.visibilityState === "visible") pullIfNewer();
+  }, 15000);
+  window.addEventListener("focus", pullIfNewer);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") pullIfNewer();
+  });
 }
 
 function totals(sales) {
@@ -1314,6 +1573,7 @@ $("editApply").addEventListener("click",() => {
   }
   if (draft.split) writeSplitSale(found.sale, draft.result);
   else writeSimpleSale(found.sale, draft.amount, draft.rate);
+  found.sale.editedAt = now();
   if (found.close) found.close.totals = totals(found.close.sales);
   saveData();
   closeEditModal();
@@ -1381,6 +1641,7 @@ $("saleForm").addEventListener("submit",event => {
 
   const sale = {
     id:Date.now(),
+    editedAt:now(),
     time:now(),
     client,
     reference,
@@ -1585,6 +1846,7 @@ function renderClientSummary(sales) {
       }
       if (!confirm("¿Borrar las ventas de hoy de " + name + "?")) return;
       const ids = new Set(clientSales.map(sale => sale.id));
+      clientSales.forEach(sale => rememberDelete(sale.id));
       data.current.sales = data.current.sales.filter(sale => !ids.has(sale.id));
       saveData();
       render();
@@ -1621,43 +1883,62 @@ function renderBreakdown(sales,target) {
   });
 }
 
-function salesByDay() {
-  const map = {};
-  const add = sale => {
-    const key = dayKey(sale.time || Date.now());
-    if (!map[key]) map[key] = [];
-    map[key].push(sale);
-  };
-  data.history.forEach(close => (close.sales || []).forEach(add));
-  (data.current.sales || []).forEach(add);
-  const today = dayKey(Date.now());
-  if (!map[today]) map[today] = [];
-  return map;
+function receivedValue(value) {
+  if (value == null || value === "" || !Number.isFinite(Number(value))) return null;
+  return Number(value);
+}
+
+function differenceText(net, received) {
+  const got = receivedValue(received);
+  if (got == null) return "—";
+  return money(Math.round((Number(net) - got) * 100) / 100);
 }
 
 function renderHistory() {
   const target = $("historyList");
   target.innerHTML = "";
-  const days = salesByDay();
-  const keys = Object.keys(days).sort().reverse();
-  const allSales = keys.flatMap(key => days[key]);
-  const historicalTotals = totals(allSales);
+  const blocks = [];
+  (data.history || []).forEach(close => {
+    const sales = close.sales || [];
+    blocks.push({
+      title:dayTitle(dayKey(close.closedAt || close.openedAt)),
+      when:dateTime(close.closedAt || close.openedAt),
+      sales,
+      totals:close.totals || totals(sales),
+      received:close.receivedNet,
+      observations:close.observations || "",
+      open:false
+    });
+  });
+  $("historyCountLine").textContent = blocks.length + (blocks.length === 1 ? " cierre" : " cierres");
 
-  $("historyCount").textContent = keys.length;
-  $("historySales").textContent = money(historicalTotals.sales);
-  $("historyCommission").textContent = money(historicalTotals.commission);
-  $("historyNet").textContent = money(historicalTotals.net);
+  const openSales = data.current.sales || [];
+  if (openSales.length) {
+    blocks.unshift({
+      title:dayTitle(dayKey(data.current.openedAt || Date.now())) + " · Caja abierta",
+      when:"Todavía no está cerrada",
+      sales:openSales,
+      totals:totals(openSales),
+      received:data.current.receivedNet,
+      observations:"",
+      open:true
+    });
+  }
 
-  keys.forEach(key => {
-    const sales = days[key];
-    const t = totals(sales);
+  if (!blocks.length) {
+    target.innerHTML = '<div class="empty">Todavía no hay cierres.</div>';
+    return;
+  }
+
+  blocks.forEach(block => {
+    const t = block.totals;
     const item = document.createElement("details");
     item.className = "history-item";
-    if (key === dayKey(Date.now())) item.open = true;
+    item.open = block.open;
 
     const summary = document.createElement("summary");
     summary.innerHTML = `
-      <span>${dayTitle(key)}</span>
+      <span>${block.title}</span>
       <span class="badge">Ventas ${money(t.sales)} · Comisión ${money(t.commission)} · Depósito ${money(t.net)}</span>
     `;
     item.appendChild(summary);
@@ -1671,14 +1952,30 @@ function renderHistory() {
       <div><span>VENTAS</span><strong>${money(t.sales)}</strong></div>
       <div><span>COMISIÓN</span><strong>${money(t.commission)}</strong></div>
       <div><span>DEPÓSITO</span><strong>${money(t.net)}</strong></div>
+      <div><span>NETO RECIBIDO</span><strong>${receivedValue(block.received) == null ? "—" : money(block.received)}</strong></div>
+      <div><span>DIFERENCIA</span><strong>${differenceText(t.net, block.received)}</strong></div>
     `;
     body.appendChild(sums);
+    if (block.when) {
+      const when = document.createElement("p");
+      when.className = "subtitle";
+      when.textContent = block.when;
+      body.appendChild(when);
+    }
+    if (block.observations) {
+      const note = document.createElement("p");
+      note.className = "subtitle";
+      note.textContent = "Observación: " + block.observations;
+      body.appendChild(note);
+    }
 
     const heading = document.createElement("h3");
     heading.textContent = "Totales por cliente y referencia";
     heading.style.fontSize = "18px";
     body.appendChild(heading);
-    renderBreakdown(sales,body);
+    const breakdown = document.createElement("div");
+    body.appendChild(breakdown);
+    renderBreakdown(block.sales,breakdown);
 
     const saleHeading = document.createElement("h3");
     saleHeading.textContent = "Detalle de ventas";
@@ -1687,7 +1984,7 @@ function renderHistory() {
     body.appendChild(saleHeading);
 
     const salesContainer = document.createElement("div");
-    renderSales(sales,salesContainer);
+    renderSales(block.sales,salesContainer);
     body.appendChild(salesContainer);
     item.appendChild(body);
     target.appendChild(item);
@@ -1701,6 +1998,15 @@ function render() {
   $("totalSales").textContent = money(t.sales);
   $("totalCommission").textContent = money(t.commission);
   $("totalNet").textContent = money(t.net);
+  $("calculatedNet").textContent = money(t.net);
+  $("closeCalculated").textContent = money(t.net);
+  const received = receivedValue(data.current.receivedNet);
+  if (document.activeElement !== $("receivedNet")) {
+    $("receivedNet").value = received == null ? "" : String(received);
+  }
+  $("netDifference").textContent = differenceText(t.net, received);
+  $("closeReceived").textContent = received == null ? "—" : money(received);
+  $("closeDifference").textContent = differenceText(t.net, received);
 
   $("closeSales").textContent = money(t.sales);
   $("closeCommission").textContent = money(t.commission);
@@ -1720,6 +2026,7 @@ $("clearTodayButton").addEventListener("click",() => {
     return;
   }
   if (!confirm("¿Borrar todas las ventas de hoy? El historial de los otros días se conserva.")) return;
+  (data.current.sales || []).forEach(sale => rememberDelete(sale.id));
   data.current.sales = [];
   saveData();
   render();
@@ -1740,7 +2047,8 @@ $("closeButton").addEventListener("click",() => {
     closedAt,
     observations:$("observations").value.trim(),
     sales:data.current.sales,
-    totals:totals(data.current.sales)
+    totals:totals(data.current.sales),
+    receivedNet:receivedValue(data.current.receivedNet)
   };
 
   data.history.unshift(closed);
@@ -1801,14 +2109,33 @@ function showApp() {
   $("app").classList.remove("hidden");
   applyTheme();
   render();
+  startSync();
 }
+
+$("receivedNet").addEventListener("input",() => {
+  const raw = $("receivedNet").value.trim();
+  if (raw === "") {
+    data.current.receivedNet = null;
+    data.current.receivedAt = Date.now();
+  } else {
+    const value = Number(raw);
+    if (!Number.isFinite(value)) return;
+    data.current.receivedNet = Math.round(value * 100) / 100;
+    data.current.receivedAt = Date.now();
+  }
+  const net = totals(data.current.sales || []).net;
+  $("netDifference").textContent = differenceText(net, data.current.receivedNet);
+  $("closeReceived").textContent = receivedValue(data.current.receivedNet) == null ? "—" : money(data.current.receivedNet);
+  $("closeDifference").textContent = differenceText(net, data.current.receivedNet);
+  saveData();
+});
 
 $("loginForm").addEventListener("submit",event => {
   event.preventDefault();
-
-  if ($("username").value.trim() === "admin" &&
-      $("password").value === "Culqui2026") {
-    sessionStorage.setItem("CULQUI_LOGIN","true");
+  const user = $("username").value.trim().toUpperCase();
+  const pass = $("password").value;
+  if (user === "CEO" && pass === "1234") {
+    localStorage.setItem(SESSION_KEY,"CEO");
     $("loginError").textContent = "";
     showApp();
   } else {
@@ -1817,7 +2144,7 @@ $("loginForm").addEventListener("submit",event => {
 });
 
 fillRates();
-showApp();
+if (localStorage.getItem(SESSION_KEY) === "CEO") showApp();
 calculate();
 
 if ("serviceWorker" in navigator) {
