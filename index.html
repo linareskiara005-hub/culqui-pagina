@@ -107,10 +107,10 @@ main {max-width:1080px;margin:12px auto;padding:0 14px 20px}
   border:1px solid var(--line);
   background:var(--card);
   color:var(--muted);
-  padding:9px 14px;
-  border-radius:12px;
-  font-weight:700;
-  font-size:18px;
+  padding:16px 26px;
+  border-radius:14px;
+  font-weight:800;
+  font-size:26px;
   box-shadow:0 3px 12px rgba(20,40,70,.03);
   transition:.2s;
 }
@@ -387,7 +387,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 .ref-card-top {display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
 .ref-card-top strong {font-size:20px}
 .ref-card-top span {color:var(--muted);font-size:16px;font-weight:700}
-.ref-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
+.ref-metrics {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:8px 0}
 .ref-metrics span {display:block;color:var(--muted);font-size:15px;font-weight:700}
 .ref-metrics b {font-size:19px}
 .ref-bank {display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -465,12 +465,12 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
   .logo {font-size:28px}
   .topbar {align-items:stretch}
   .tabs {display:grid;grid-template-columns:repeat(3,1fr);width:100%;gap:6px}
-  .tab {padding:11px 4px;font-size:16px}
+  .tab {padding:16px 6px;font-size:20px}
   .tools {justify-content:flex-end}
   .panel {padding:16px;border-radius:17px}
   .stats,.stats-4,.day-sums {gap:8px}
   .stats-4,.stats-5,.day-sums {grid-template-columns:repeat(2,minmax(0,1fr))}
-  .ref-metrics {grid-template-columns:1fr}
+  .ref-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
   .day-sums {grid-template-columns:repeat(3,minmax(0,1fr))}
   .stat {padding:12px}
   .stat strong {font-size:24px}
@@ -831,6 +831,18 @@ function signedMoney(value) {
 }
 
 const POS_ORDER = ["R1","R2","R3","RL","S","G1","G2"];
+
+function diffPercent(total, deposit) {
+  const sold = Number(total);
+  const net = Number(deposit);
+  if (!sold) return null;
+  return Math.round((((net / sold) - 1) * 100) * 100) / 100;
+}
+
+function percentText(value) {
+  if (value == null) return "—";
+  return (value > 0 ? "+" : "") + formatPercent(value) + "%";
+}
 
 function bankGap(total, bank) {
   const got = receivedValue(bank);
@@ -2201,14 +2213,16 @@ function renderHistory() {
       });
       sum = Math.round(sum * 100) / 100;
       bankNode.textContent = any ? money(sum) : "—";
+      const percent = diffPercent(t.sales, t.net);
       const gap = complete && any ? bankGap(t.sales, sum) : null;
-      diffNode.textContent = gap == null ? "—" : signedMoney(gap);
+      diffNode.textContent = percentText(percent) + (gap == null ? "" : " · " + signedMoney(gap));
       diffNode.className = gap == null ? "" : gap > 0 ? "down" : gap < 0 ? "up" : "";
     }
 
     groups.forEach((group, index) => {
       const key = groupKey(group.client, group.reference);
       const gt = totals(group.sales);
+      const percent = diffPercent(gt.sales, gt.net);
       const account = accountOf(group.sales[0]);
       const card = document.createElement("div");
       card.className = "ref-card tone-" + (index % 5);
@@ -2221,6 +2235,7 @@ function renderHistory() {
           <div><span>VENDIDO</span><b>${money(gt.sales)}</b></div>
           <div><span>COMISIÓN</span><b>${money(gt.commission)}</b></div>
           <div><span>DEPÓSITO</span><b>${money(gt.net)}</b></div>
+          <div><span>PORCENTAJE</span><b>${percentText(percent)}</b></div>
         </div>
       `;
       const bankRow = document.createElement("div");
@@ -2274,7 +2289,7 @@ function renderHistory() {
           paintDay();
         });
         const gap = bankGap(gt.sales, savedBank);
-        diff.textContent = "Diferencia " + signedMoney(gap);
+        diff.textContent = "Diferencia " + signedMoney(gap) + " · " + percentText(percent);
         diff.className = "ref-diff " + (gap > 0 ? "down" : gap < 0 ? "up" : "");
         bankRow.append(fixed, remove, diff);
       };
