@@ -837,7 +837,7 @@ function ratePercent(total, deposit) {
   const net = Number(deposit);
   if (!sold) return null;
   const raw = ((net / sold) - 1) * 100;
-  return Math.round(Math.abs(raw) * 100) / 100;
+  return Math.round(raw * 100) / 100;
 }
 
 function bankGap(total, bank) {
