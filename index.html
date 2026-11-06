@@ -2220,7 +2220,7 @@ function renderHistory() {
       sum = Math.round(sum * 100) / 100;
       bankNode.textContent = any ? money(sum) : "—";
       const gap = complete && any ? bankGap(t.sales, sum) : null;
-      const percent = complete && any ? diffPercent(t.sales, t.net) : null;
+      const percent = complete && any ? diffPercent(t.sales, sum) : null;
       diffNode.textContent = gap == null ? "—" : percentText(percent) + " · " + signedMoney(gap);
       diffNode.className = gap == null ? "" : gap > 0 ? "down" : gap < 0 ? "up" : "";
     }
@@ -2228,7 +2228,6 @@ function renderHistory() {
     groups.forEach((group, index) => {
       const key = groupKey(group.client, group.reference);
       const gt = totals(group.sales);
-      const percent = diffPercent(gt.sales, gt.net);
       const account = accountOf(group.sales[0]);
       const card = document.createElement("div");
       card.className = "ref-card tone-" + (index % 5);
@@ -2292,6 +2291,7 @@ function renderHistory() {
           paintDay();
         });
         const gap = bankGap(gt.sales, savedBank);
+        const percent = diffPercent(gt.sales, savedBank);
         diff.textContent = "Diferencia " + signedMoney(gap) + " · " + percentText(percent);
         diff.className = "ref-diff " + (gap > 0 ? "down" : gap < 0 ? "up" : "");
         bankRow.append(fixed, remove, diff);
