@@ -832,14 +832,6 @@ function signedMoney(value) {
 
 const POS_ORDER = ["R1","R2","R3","RL","S","G1","G2"];
 
-function ratePercent(total, deposit) {
-  const sold = Number(total);
-  const net = Number(deposit);
-  if (!sold) return null;
-  const raw = ((net / sold) - 1) * 100;
-  return Math.round(raw * 100) / 100;
-}
-
 function bankGap(total, bank) {
   const got = receivedValue(bank);
   const sold = Number(total);
@@ -2209,9 +2201,8 @@ function renderHistory() {
       });
       sum = Math.round(sum * 100) / 100;
       bankNode.textContent = any ? money(sum) : "—";
-      const percent = ratePercent(t.sales, t.net);
       const gap = complete && any ? bankGap(t.sales, sum) : null;
-      diffNode.textContent = percent == null ? "—" : formatPercent(percent) + "%" + (gap == null ? "" : " · " + signedMoney(gap));
+      diffNode.textContent = gap == null ? "—" : signedMoney(gap);
       diffNode.className = gap == null ? "" : gap > 0 ? "down" : gap < 0 ? "up" : "";
     }
 
@@ -2265,8 +2256,7 @@ function renderHistory() {
             paintDay();
           });
           bankRow.append(label, input, accept, diff);
-          const percent = ratePercent(gt.sales, gt.net);
-          diff.textContent = "Porcentaje " + (percent == null ? "—" : formatPercent(percent) + "%") + ". Acepta el banco de este POS para ver la diferencia.";
+          diff.textContent = "Acepta el banco de este POS para ver la diferencia.";
           diff.className = "ref-diff";
           return;
         }
@@ -2283,9 +2273,8 @@ function renderHistory() {
           drawBank();
           paintDay();
         });
-        const percent = ratePercent(gt.sales, gt.net);
         const gap = bankGap(gt.sales, savedBank);
-        diff.textContent = "Diferencia " + signedMoney(gap) + " · Porcentaje " + formatPercent(percent) + "%";
+        diff.textContent = "Diferencia " + signedMoney(gap);
         diff.className = "ref-diff " + (gap > 0 ? "down" : gap < 0 ? "up" : "");
         bankRow.append(fixed, remove, diff);
       };
