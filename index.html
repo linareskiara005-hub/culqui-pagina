@@ -830,17 +830,21 @@ function signedMoney(value) {
   return money(rounded);
 }
 
-function bankCompare(amount, bank) {
+const POS_ORDER = ["R1","R2","R3","RL","S","G1","G2"];
+
+function ratePercent(total, deposit) {
+  const sold = Number(total);
+  const net = Number(deposit);
+  if (!sold) return null;
+  const raw = ((net / sold) - 1) * 100;
+  return Math.round(Math.abs(raw) * 100) / 100;
+}
+
+function bankGap(total, bank) {
   const got = receivedValue(bank);
-  const sold = Number(amount);
-  if (got == null || !sold) return {text:"—",tone:""};
-  const diff = Math.round((sold - got) * 100) / 100;
-  const percent = Math.round(((got / sold) - 1) * 10000) / 100;
-  const shown = (percent > 0 ? "+" : "") + formatPercent(percent) + "%";
-  return {
-    text:shown + " = " + signedMoney(diff),
-    tone:percent < 0 ? "down" : percent > 0 ? "up" : ""
-  };
+  const sold = Number(total);
+  if (got == null || !sold) return null;
+  return Math.round((sold - got) * 100) / 100;
 }
 
 const $ = id => document.getElementById(id);
@@ -2174,7 +2178,11 @@ function renderHistory() {
     headingDay.textContent = block.title;
     day.appendChild(headingDay);
 
-    const groups = groupSales(block.sales);
+    const groups = groupSales(block.sales).sort((a, b) => {
+      const left = POS_ORDER.indexOf(a.reference);
+      const right = POS_ORDER.indexOf(b.reference);
+      return (left < 0 ? 99 : left) - (right < 0 ? 99 : right);
+    });
     const bankNode = document.createElement("strong");
     const diffNode = document.createElement("strong");
     const sums = document.createElement("div");
@@ -2201,9 +2209,10 @@ function renderHistory() {
       });
       sum = Math.round(sum * 100) / 100;
       bankNode.textContent = any ? money(sum) : "—";
-      const compared = complete && any ? bankCompare(t.sales, sum) : {text:"—",tone:""};
-      diffNode.textContent = compared.text;
-      diffNode.className = compared.tone;
+      const percent = ratePercent(t.sales, t.net);
+      const gap = complete && any ? bankGap(t.sales, sum) : null;
+      diffNode.textContent = percent == null ? "—" : formatPercent(percent) + "%" + (gap == null ? "" : " · " + signedMoney(gap));
+      diffNode.className = gap == null ? "" : gap > 0 ? "down" : gap < 0 ? "up" : "";
     }
 
     groups.forEach((group, index) => {
@@ -2256,7 +2265,8 @@ function renderHistory() {
             paintDay();
           });
           bankRow.append(label, input, accept, diff);
-          diff.textContent = "Acepta el banco para dejarlo fijo y ver la diferencia.";
+          const percent = ratePercent(gt.sales, gt.net);
+          diff.textContent = "Porcentaje " + (percent == null ? "—" : formatPercent(percent) + "%") + ". Acepta el banco de este POS para ver la diferencia.";
           diff.className = "ref-diff";
           return;
         }
@@ -2273,9 +2283,10 @@ function renderHistory() {
           drawBank();
           paintDay();
         });
-        const compared = bankCompare(gt.sales, savedBank);
-        diff.textContent = compared.text;
-        diff.className = "ref-diff " + compared.tone;
+        const percent = ratePercent(gt.sales, gt.net);
+        const gap = bankGap(gt.sales, savedBank);
+        diff.textContent = "Diferencia " + signedMoney(gap) + " · Porcentaje " + formatPercent(percent) + "%";
+        diff.className = "ref-diff " + (gap > 0 ? "down" : gap < 0 ? "up" : "");
         bankRow.append(fixed, remove, diff);
       };
       drawBank();
