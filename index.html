@@ -325,8 +325,24 @@ details[open] > .group-head:after {content:"−"}
   margin-top:12px;
 }
 .total-box strong {color:var(--accent)}
-.history-day {margin:0 0 14px}
+.history-day {margin:0 0 16px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .history-day h3 {margin:0 0 8px;font-size:18px;font-weight:800}
+.stats-5 {grid-template-columns:repeat(5,minmax(0,1fr))}
+.ref-card {
+  background:var(--card2);border:1px solid var(--line);border-radius:14px;
+  padding:12px;margin:8px 0;
+}
+.ref-card-top {display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.ref-card-top strong {font-size:17px}
+.ref-card-top span {color:var(--muted);font-size:14px;font-weight:700}
+.ref-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
+.ref-metrics span {display:block;color:var(--muted);font-size:13px;font-weight:700}
+.ref-metrics b {font-size:16px}
+.ref-bank {display:grid;grid-template-columns:88px 1fr;gap:8px;align-items:center}
+.ref-bank label {font-size:14px;font-weight:800;margin:0}
+.ref-diff {grid-column:1 / -1;font-size:16px;font-weight:800}
+.ref-diff.down {color:#d94c5b}
+.ref-diff.up {color:#087f78}
 .history-item {padding:0}
 .history-item > summary {
   cursor:pointer;list-style:none;padding:16px;
@@ -395,7 +411,8 @@ details[open] > .group-head:after {content:"−"}
   .tools {justify-content:flex-end}
   .panel {padding:16px;border-radius:17px}
   .stats,.stats-4,.day-sums {gap:8px}
-  .stats-4,.day-sums {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats-4,.stats-5,.day-sums {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ref-metrics {grid-template-columns:1fr}
   .day-sums {grid-template-columns:repeat(3,minmax(0,1fr))}
   .stat {padding:12px}
   .stat strong {font-size:22px}
@@ -469,21 +486,6 @@ details[open] > .group-head:after {content:"−"}
         <div class="stat"><span>COMISIONES</span><strong id="totalCommission">S/ 0.00</strong></div>
         <div class="stat"><span>DEPÓSITO NETO</span><strong id="totalNet">S/ 0.00</strong></div>
       </div>
-      <div class="net-box">
-        <div>
-          <span>NETO CALCULADO</span>
-          <strong id="calculatedNet">S/ 0.00</strong>
-        </div>
-        <div>
-          <label for="receivedNet">NETO RECIBIDO</label>
-          <input id="receivedNet" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Lo que llegó">
-        </div>
-        <div>
-          <span>DIFERENCIA DE COMISIÓN</span>
-          <strong id="netDifference">—</strong>
-        </div>
-      </div>
-
       <div class="panel">
         <h2 class="panel-title">Registrar nueva venta</h2>
         <p class="subtitle">Completa los datos para calcular automáticamente la comisión.</p>
@@ -735,6 +737,45 @@ const clients = {
   "Benito B": {account:"9309",cta:"1093",refs:["RL","S"]},
   "Gambusilandia": {account:"7859",cta:"68091",refs:["G1","G2"]}
 };
+const REF_CODES = {
+  R1:"0841",R2:"5487",R3:"9576",
+  RL:"5046",S:"8599",
+  G1:"4948",G2:"3645"
+};
+
+function refLabel(ref) {
+  const code = REF_CODES[ref];
+  return code ? ref + " (" + code + ")" : String(ref || "");
+}
+
+function groupKey(client, reference) {
+  return client + "||" + reference;
+}
+
+function takeBanks(sales) {
+  const bag = data.current.banks || {};
+  const picked = {};
+  sales.forEach(sale => {
+    const key = groupKey(sale.client, sale.reference);
+    if (bag[key] != null) {
+      picked[key] = bag[key];
+      delete bag[key];
+    }
+  });
+  data.current.banks = bag;
+  return picked;
+}
+
+function bankCompare(amount, deposit, bank) {
+  const got = receivedValue(bank);
+  if (got == null || !Number(amount)) return {text:"—",tone:""};
+  const percent = Math.round(((Number(amount) - got) / Number(amount)) * 10000) / 100;
+  const shown = formatPercent(Math.abs(percent));
+  const value = money(Math.round(Math.abs(Number(amount) - got) * 100) / 100);
+  if (Math.abs(got - Number(deposit)) < 0.009) return {text:shown + "% = " + value,tone:""};
+  if (got < Number(deposit)) return {text:"-" + shown + "% = " + value,tone:"down"};
+  return {text:"+" + shown + "% = " + value,tone:"up"};
+}
 
 const $ = id => document.getElementById(id);
 const money = n => "S/ " + Number(n || 0).toFixed(2);
@@ -825,7 +866,8 @@ function archivePastDays() {
       observations:"Cierre automático del día",
       sales:daySales,
       totals:totals(daySales),
-      day:key
+      day:key,
+      banks:takeBanks(daySales)
     });
   });
 
@@ -1093,7 +1135,7 @@ function fillAddReferences(client,keep) {
   refs.forEach(ref => {
     const option = document.createElement("option");
     option.value = ref;
-    option.textContent = ref;
+    option.textContent = refLabel(ref);
     select.appendChild(option);
   });
   if (refs.includes(keep)) select.value = keep;
@@ -1618,7 +1660,7 @@ $("client").addEventListener("change",() => {
   refs.forEach(ref => {
     const option = document.createElement("option");
     option.value = ref;
-    option.textContent = ref;
+    option.textContent = refLabel(ref);
     $("reference").appendChild(option);
   });
 });
@@ -1815,7 +1857,7 @@ function renderSales(sales,target) {
     const summary = document.createElement("summary");
     summary.className = "group-head";
     summary.innerHTML = `
-      <span class="group-title">${escapeHtml(group.client)} · ${escapeHtml(group.reference)}</span>
+      <span class="group-title">${escapeHtml(group.client)} · ${escapeHtml(refLabel(group.reference))}</span>
       <span class="group-meta">${group.sales.length} venta(s) · ${money(t.sales)}</span>
     `;
     details.appendChild(summary);
@@ -1829,7 +1871,7 @@ function renderSales(sales,target) {
       <strong>${escapeHtml(group.client)}</strong>
       &nbsp; · &nbsp; Cuenta: ${escapeHtml(account.account)}
       &nbsp; · &nbsp; CTA: ${escapeHtml(account.cta)}
-      &nbsp; · &nbsp; Ref.: ${escapeHtml(group.reference)}
+      &nbsp; · &nbsp; Ref.: ${escapeHtml(refLabel(group.reference))}
     `;
     body.appendChild(accountBox);
 
@@ -1872,7 +1914,7 @@ function renderSales(sales,target) {
     const totalBox = document.createElement("div");
     totalBox.className = "total-box";
     totalBox.innerHTML = `
-      <strong>TOTAL · ${escapeHtml(group.client)} · ${escapeHtml(group.reference)}</strong><br>
+      <strong>TOTAL · ${escapeHtml(group.client)} · ${escapeHtml(refLabel(group.reference))}</strong><br>
       Ventas: ${money(t.sales)} &nbsp; · &nbsp;
       Comisiones: ${money(t.commission)}<br>
       Neto y depósito: ${money(t.net)}
@@ -1934,7 +1976,7 @@ function renderClientSummary(sales) {
       clientSales.forEach(sale => {
         const line = document.createElement("div");
         line.className = "editor-line";
-        line.innerHTML = `<span>${dateTime(sale.time)} · ${escapeHtml(sale.reference)} · ${money(sale.amount)}${sale.split ? " · División" : ""}</span>`;
+        line.innerHTML = `<span>${dateTime(sale.time)} · ${escapeHtml(refLabel(sale.reference))} · ${money(sale.amount)}${sale.split ? " · División" : ""}</span>`;
         const fix = document.createElement("button");
         fix.type = "button";
         fix.className = "icon-btn";
@@ -1999,7 +2041,7 @@ function renderBreakdown(sales,target) {
     const box = document.createElement("div");
     box.className = "total-box";
     box.innerHTML = `
-      <strong>${escapeHtml(group.client)} · ${escapeHtml(group.reference)}</strong><br>
+      <strong>${escapeHtml(group.client)} · ${escapeHtml(refLabel(group.reference))}</strong><br>
       Cuenta: ${escapeHtml(account.account)} · CTA: ${escapeHtml(account.cta)}<br>
       Ventas: ${money(t.sales)} · Comisiones: ${money(t.commission)}<br>
       Neto y depósito: ${money(t.net)}
@@ -2025,27 +2067,31 @@ function renderHistory() {
   const blocks = [];
   (data.history || []).forEach(close => {
     const sales = close.sales || [];
+    close.banks = close.banks || {};
     blocks.push({
       title:dayTitle(dayKey(close.closedAt || close.openedAt)),
       when:dateTime(close.closedAt || close.openedAt),
       sales,
       totals:totals(sales),
-      received:close.receivedNet,
       observations:close.observations || "",
-      open:false
+      where:"history",
+      id:close.id,
+      banks:close.banks
     });
   });
 
   const openSales = data.current.sales || [];
   if (openSales.length) {
+    data.current.banks = data.current.banks || {};
     blocks.unshift({
       title:dayTitle(dayKey(Date.now())),
       when:"Caja de hoy, todavía abierta",
       sales:openSales,
       totals:totals(openSales),
-      received:data.current.receivedNet,
       observations:"",
-      open:false
+      where:"current",
+      id:"current",
+      banks:data.current.banks
     });
   }
 
@@ -2062,14 +2108,92 @@ function renderHistory() {
     headingDay.textContent = block.title;
     day.appendChild(headingDay);
 
+    const groups = groupSales(block.sales);
+    const bankNode = document.createElement("strong");
+    const diffNode = document.createElement("strong");
     const sums = document.createElement("div");
-    sums.className = "stats";
+    sums.className = "stats stats-5";
     sums.innerHTML = `
       <div class="stat"><span>TOTAL VENDIDO</span><strong>${money(t.sales)}</strong></div>
       <div class="stat"><span>COMISIONES</span><strong>${money(t.commission)}</strong></div>
       <div class="stat"><span>DEPÓSITO NETO</span><strong>${money(t.net)}</strong></div>
+      <div class="stat"><span>BANCO</span></div>
+      <div class="stat"><span>DIFERENCIA</span></div>
     `;
+    sums.children[3].appendChild(bankNode);
+    sums.children[4].appendChild(diffNode);
     day.appendChild(sums);
+
+    function paintDay() {
+      let sum = 0;
+      let any = false;
+      let complete = true;
+      groups.forEach(group => {
+        const value = receivedValue(block.banks[groupKey(group.client, group.reference)]);
+        if (value == null) complete = false;
+        else { any = true; sum += value; }
+      });
+      sum = Math.round(sum * 100) / 100;
+      bankNode.textContent = any ? money(sum) : "—";
+      const compared = complete && any ? bankCompare(t.sales, t.net, sum) : {text:"—",tone:""};
+      diffNode.textContent = compared.text;
+      diffNode.className = compared.tone;
+    }
+
+    groups.forEach(group => {
+      const key = groupKey(group.client, group.reference);
+      const gt = totals(group.sales);
+      const account = accountOf(group.sales[0]);
+      const card = document.createElement("div");
+      card.className = "ref-card";
+      card.innerHTML = `
+        <div class="ref-card-top">
+          <strong>${escapeHtml(group.client)} · ${escapeHtml(refLabel(group.reference))}</strong>
+          <span>Cuenta ${escapeHtml(account.account)} · CTA ${escapeHtml(account.cta)}</span>
+        </div>
+        <div class="ref-metrics">
+          <div><span>VENDIDO</span><b>${money(gt.sales)}</b></div>
+          <div><span>COMISIÓN</span><b>${money(gt.commission)}</b></div>
+          <div><span>DEPÓSITO</span><b>${money(gt.net)}</b></div>
+        </div>
+      `;
+      const bankRow = document.createElement("div");
+      bankRow.className = "ref-bank";
+      const label = document.createElement("label");
+      label.textContent = "BANCO";
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.step = "0.01";
+      input.inputMode = "decimal";
+      input.placeholder = "Lo que depositó el banco";
+      const saved = receivedValue(block.banks[key]);
+      input.value = saved == null ? "" : String(saved);
+      const diff = document.createElement("div");
+      diff.className = "ref-diff";
+      const paintRow = () => {
+        const compared = bankCompare(gt.sales, gt.net, block.banks[key]);
+        diff.textContent = compared.text === "—" ? "Escribe el banco para ver la diferencia." : compared.text;
+        diff.className = "ref-diff " + compared.tone;
+      };
+      input.addEventListener("input",() => {
+        const raw = input.value.trim();
+        if (raw === "") delete block.banks[key];
+        else {
+          const value = Number(raw);
+          if (!Number.isFinite(value)) return;
+          block.banks[key] = Math.round(value * 100) / 100;
+        }
+        paintRow();
+        paintDay();
+        saveData();
+      });
+      paintRow();
+      bankRow.append(label, input, diff);
+      card.appendChild(bankRow);
+      day.appendChild(card);
+    });
+    paintDay();
 
     const item = document.createElement("details");
     item.className = "history-item";
@@ -2124,13 +2248,8 @@ function render() {
   $("totalSales").textContent = money(t.sales);
   $("totalCommission").textContent = money(t.commission);
   $("totalNet").textContent = money(t.net);
-  $("calculatedNet").textContent = money(t.net);
   $("closeCalculated").textContent = money(t.net);
   const received = receivedValue(data.current.receivedNet);
-  if (document.activeElement !== $("receivedNet")) {
-    $("receivedNet").value = received == null ? "" : String(received);
-  }
-  $("netDifference").textContent = differenceText(t.net, received);
   $("closeReceived").textContent = received == null ? "—" : money(received);
   $("closeDifference").textContent = differenceText(t.net, received);
 
@@ -2174,7 +2293,8 @@ $("closeButton").addEventListener("click",() => {
     observations:$("observations").value.trim(),
     sales:data.current.sales,
     totals:totals(data.current.sales),
-    receivedNet:receivedValue(data.current.receivedNet)
+    receivedNet:receivedValue(data.current.receivedNet),
+    banks:data.current.banks || {}
   };
 
   data.history.unshift(closed);
@@ -2260,24 +2380,6 @@ function leaveAccount() {
   $("password").value = "";
   $("loginError").textContent = "";
 }
-
-$("receivedNet").addEventListener("input",() => {
-  const raw = $("receivedNet").value.trim();
-  if (raw === "") {
-    data.current.receivedNet = null;
-    data.current.receivedAt = Date.now();
-  } else {
-    const value = Number(raw);
-    if (!Number.isFinite(value)) return;
-    data.current.receivedNet = Math.round(value * 100) / 100;
-    data.current.receivedAt = Date.now();
-  }
-  const net = totals(data.current.sales || []).net;
-  $("netDifference").textContent = differenceText(net, data.current.receivedNet);
-  $("closeReceived").textContent = receivedValue(data.current.receivedNet) == null ? "—" : money(data.current.receivedNet);
-  $("closeDifference").textContent = differenceText(net, data.current.receivedNet);
-  saveData();
-});
 
 $("logoutButton").addEventListener("click",leaveAccount);
 
