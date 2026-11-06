@@ -2220,8 +2220,8 @@ function renderHistory() {
       sum = Math.round(sum * 100) / 100;
       bankNode.textContent = any ? money(sum) : "—";
       const gap = complete && any ? bankGap(t.sales, sum) : null;
-      const percent = diffPercent(t.sales, t.net);
-      diffNode.textContent = percentText(percent) + (gap == null ? "" : " · " + signedMoney(gap));
+      const percent = complete && any ? diffPercent(t.sales, t.net) : null;
+      diffNode.textContent = gap == null ? "—" : percentText(percent) + " · " + signedMoney(gap);
       diffNode.className = gap == null ? "" : gap > 0 ? "down" : gap < 0 ? "up" : "";
     }
 
@@ -2275,9 +2275,7 @@ function renderHistory() {
             drawBank();
             paintDay();
           });
-          bankRow.append(label, input, accept, diff);
-          diff.textContent = "Diferencia " + percentText(percent) + ". Acepta el banco de este POS.";
-          diff.className = "ref-diff";
+          bankRow.append(label, input, accept);
           return;
         }
         const fixed = document.createElement("div");
