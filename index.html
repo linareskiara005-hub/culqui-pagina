@@ -195,6 +195,9 @@ main {max-width:1080px;margin:12px auto;padding:0 14px 20px}
 .stats-5 .stat:nth-child(4) strong {color:#0b7a58}
 .stats-5 .stat:nth-child(5) {background:#fff0f2;border-bottom:4px solid #e05b68}
 .stats-5 .stat:nth-child(5) strong {color:#b42336}
+.stats-day {grid-template-columns:repeat(3,minmax(0,1fr))}
+.stats-day .stat:nth-child(6) {background:#fff8e8;border-bottom:4px solid #e0a106}
+.stats-day .stat:nth-child(6) strong {color:#8a5a00}
 .stats-4 {grid-template-columns:repeat(4,minmax(0,1fr))}
 .stats-4 .stat:nth-child(3) {border-bottom:3px solid #10a99a}
 .stats-4 .stat:nth-child(4) {border-bottom:3px solid #9874e8}
@@ -364,12 +367,14 @@ body.dark .stat:nth-child(3) {background:#2a2344}
 body.dark .stats-5 .stat:nth-child(3) {background:#172844}
 body.dark .stats-5 .stat:nth-child(4) {background:#12362c}
 body.dark .stats-5 .stat:nth-child(5) {background:#3a1c24}
+body.dark .stats-day .stat:nth-child(6) {background:#3a3014}
 body.dark .stat:nth-child(1) strong {color:#7ddecb}
 body.dark .stat:nth-child(2) strong {color:#ffc48a}
 body.dark .stat:nth-child(3) strong {color:#d2c0ff}
 body.dark .stats-5 .stat:nth-child(3) strong {color:#9ec5ff}
 body.dark .stats-5 .stat:nth-child(4) strong {color:#8ee0bf}
 body.dark .stats-5 .stat:nth-child(5) strong {color:#ffb3bc}
+body.dark .stats-day .stat:nth-child(6) strong {color:#ffd56a}
 body.dark .history-day {background:#221c36;border-color:#43386a}
 body.dark .history-day h3 {color:#d7c8ff}
 body.dark .ref-card.tone-0 {background:#14352f}
@@ -380,6 +385,7 @@ body.dark .ref-card.tone-4 {background:#3a1c24}
 body.dark .tab.orange {color:#ffc48a;border-color:#6a4a28}
 body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 .stats-5 {grid-template-columns:repeat(5,minmax(0,1fr))}
+.stats-day {grid-template-columns:repeat(3,minmax(0,1fr))}
 .ref-card {
   background:var(--card2);border:1px solid var(--line);border-radius:14px;
   padding:12px;margin:8px 0;
@@ -469,7 +475,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
   .tools {justify-content:flex-end}
   .panel {padding:16px;border-radius:17px}
   .stats,.stats-4,.day-sums {gap:8px}
-  .stats-4,.stats-5,.day-sums {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats-4,.stats-5,.stats-day,.day-sums {grid-template-columns:repeat(2,minmax(0,1fr))}
   .ref-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
   .day-sums {grid-template-columns:repeat(3,minmax(0,1fr))}
   .stat {padding:12px}
@@ -2189,17 +2195,20 @@ function renderHistory() {
     });
     const bankNode = document.createElement("strong");
     const diffNode = document.createElement("strong");
+    const percentNode = document.createElement("strong");
     const sums = document.createElement("div");
-    sums.className = "stats stats-5";
+    sums.className = "stats stats-5 stats-day";
     sums.innerHTML = `
       <div class="stat"><span>TOTAL VENDIDO</span><strong>${money(t.sales)}</strong></div>
       <div class="stat"><span>COMISIONES</span><strong>${money(t.commission)}</strong></div>
       <div class="stat"><span>DEPÓSITO</span><strong>${money(t.net)}</strong></div>
       <div class="stat"><span>BANCO</span></div>
       <div class="stat"><span>DIFERENCIA</span></div>
+      <div class="stat"><span>PORCENTAJE DE LA DIFERENCIA</span></div>
     `;
     sums.children[3].appendChild(bankNode);
     sums.children[4].appendChild(diffNode);
+    sums.children[5].appendChild(percentNode);
     day.appendChild(sums);
 
     function paintDay() {
@@ -2213,10 +2222,10 @@ function renderHistory() {
       });
       sum = Math.round(sum * 100) / 100;
       bankNode.textContent = any ? money(sum) : "—";
-      const percent = diffPercent(t.sales, t.net);
       const gap = complete && any ? bankGap(t.sales, sum) : null;
-      diffNode.textContent = percentText(percent) + (gap == null ? "" : " · " + signedMoney(gap));
+      diffNode.textContent = gap == null ? "—" : signedMoney(gap);
       diffNode.className = gap == null ? "" : gap > 0 ? "down" : gap < 0 ? "up" : "";
+      percentNode.textContent = percentText(diffPercent(t.sales, t.net));
     }
 
     groups.forEach((group, index) => {
@@ -2235,7 +2244,7 @@ function renderHistory() {
           <div><span>VENDIDO</span><b>${money(gt.sales)}</b></div>
           <div><span>COMISIÓN</span><b>${money(gt.commission)}</b></div>
           <div><span>DEPÓSITO</span><b>${money(gt.net)}</b></div>
-          <div><span>PORCENTAJE</span><b>${percentText(percent)}</b></div>
+          <div><span>PORCENTAJE DE LA DIFERENCIA</span><b>${percentText(percent)}</b></div>
         </div>
       `;
       const bankRow = document.createElement("div");
@@ -2289,7 +2298,7 @@ function renderHistory() {
           paintDay();
         });
         const gap = bankGap(gt.sales, savedBank);
-        diff.textContent = "Diferencia " + signedMoney(gap) + " · " + percentText(percent);
+        diff.textContent = "Diferencia " + signedMoney(gap) + " · Porcentaje de la diferencia " + percentText(percent);
         diff.className = "ref-diff " + (gap > 0 ? "down" : gap < 0 ? "up" : "");
         bankRow.append(fixed, remove, diff);
       };
