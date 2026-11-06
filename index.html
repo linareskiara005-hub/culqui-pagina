@@ -246,7 +246,8 @@ input:focus,select:focus {
   width:40px;height:40px;border-radius:12px;border:1px solid var(--line);
   background:var(--card2);color:var(--text);font-size:20px;cursor:pointer;
 }
-.icon-btn.danger {color:#e05b68}
+.icon-btn.danger {background:#d94c5b;border-color:#d94c5b;color:#fff}
+.icon-btn.danger svg {display:block;width:22px;height:22px;margin:auto}
 .icon-btn.add {font-weight:800;font-size:18px}
 .amount-row {display:flex;gap:8px;align-items:center}
 .amount-row input {flex:1;min-width:0;width:auto}
@@ -430,6 +431,7 @@ details[open] > .group-head:after {content:"−"}
       </div>
       <p id="loginError" class="login-error"></p>
       <button class="btn" type="submit" style="width:100%">INGRESAR A CULQUI →</button>
+      <p class="subtitle" style="margin:12px 0 0">CEO es tu caja. ADMIN es la otra caja. Al entrar, la cuenta queda guardada.</p>
     </form>
     <p class="footer-note">Tu control de ventas y caja</p>
   </div>
@@ -452,7 +454,9 @@ details[open] > .group-head:after {content:"−"}
         <button class="tab purple" data-page="history">◷ Historial</button>
       </nav>
       <div class="tools">
+        <span id="accountLabel" class="sync-status"></span>
         <span id="syncStatus" class="sync-status"></span>
+        <button class="btn gray small" id="logoutButton" type="button">Salir</button>
         <button class="btn gray small" id="themeButton">☾ Oscuro</button>
       </div>
     </div>
@@ -697,12 +701,24 @@ details[open] > .group-head:after {content:"−"}
 <script>
 "use strict";
 
-const STORAGE_KEY = "CULQUI_CAJAS_V3";
+const LEGACY_KEY = "CULQUI_CAJAS_V3";
+const LEGACY_OWNER_KEY = "CULQUI_LEGACY_OWNER";
 const THEME_KEY = "CULQUI_DARK";
 const RATES_KEY = "CULQUI_RATES_V1";
 const SESSION_KEY = "CULQUI_USER";
-const SYNC_BASE = "https://mantledb.sh/v2/culqui-ceo-7f3a9c";
-const SYNC_KEY = "0207566dfc3373b7e0bdbcd992e1973c2ae76d0c177fdf26fe40e51eda79824e";
+const ACCOUNTS = {
+  CEO:{
+    storage:"CULQUI_CAJAS_CEO",
+    base:"https://mantledb.sh/v2/culqui-ceo-7f3a9c",
+    key:"0207566dfc3373b7e0bdbcd992e1973c2ae76d0c177fdf26fe40e51eda79824e"
+  },
+  ADMIN:{
+    storage:"CULQUI_CAJAS_ADMIN",
+    base:"https://mantledb.sh/v2/culqui-admin-4c8e1a",
+    key:"c075178e26023ae0e16e69abaa6cac6941de45a6858c421d8aa9d819926dc533"
+  }
+};
+let currentUser = "";
 let syncReady = false;
 const DEFAULT_RATES = [
   {id:"normal",name:"Normal",percent:2.85,locked:true},
@@ -732,17 +748,29 @@ function emptyCash() {
   return {id:Date.now(),openedAt:now(),sales:[]};
 }
 
-function loadData() {
+function readBox(key) {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (saved && saved.current && Array.isArray(saved.history)) {
-      return saved;
-    }
+    const saved = JSON.parse(localStorage.getItem(key));
+    if (saved && saved.current && Array.isArray(saved.history)) return saved;
   } catch(e) {}
+  return null;
+}
+
+function loadData() {
+  const account = ACCOUNTS[currentUser];
+  if (!account) return {current:emptyCash(),history:[]};
+  const own = readBox(account.storage);
+  if (own) return own;
+  const owner = localStorage.getItem(LEGACY_OWNER_KEY);
+  const legacy = readBox(LEGACY_KEY);
+  if (legacy && (legacy.current.sales || []).length + (legacy.history || []).length && (!owner || owner === currentUser)) {
+    if (!owner) localStorage.setItem(LEGACY_OWNER_KEY,currentUser);
+    return JSON.parse(JSON.stringify(legacy));
+  }
   return {current:emptyCash(),history:[]};
 }
 
-let data = loadData();
+let data = {current:{id:0,openedAt:"",sales:[]},history:[]};
 
 function dayKey(value) {
   const d = new Date(value);
@@ -802,8 +830,6 @@ function archivePastDays() {
   if (!todaySales.length) data.current = emptyCash();
   saveData();
 }
-
-archivePastDays();
 
 function findSale(id) {
   const current = (data.current.sales || []).find(sale => sale.id === id);
@@ -1113,7 +1139,9 @@ $("addSaleForm").addEventListener("submit",event => {
 });
 
 function persistLocal() {
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+  const account = ACCOUNTS[currentUser];
+  if (!account) return;
+  localStorage.setItem(account.storage,JSON.stringify(data));
 }
 
 function saveData() {
@@ -1131,13 +1159,16 @@ function hasMoves(box) {
   return !!((box.current && box.current.sales && box.current.sales.length) || (box.history && box.history.length));
 }
 
+let pinnedUser = "";
 async function mantle(path, method, body) {
-  const response = await fetch(SYNC_BASE + "/" + path, {
+  const account = ACCOUNTS[pinnedUser || currentUser];
+  if (!account) throw new Error("sin cuenta");
+  const response = await fetch(account.base + "/" + path, {
     method: method || "GET",
     cache:"no-store",
     headers:{
       "Content-Type":"application/json",
-      "X-Mantle-Key":SYNC_KEY
+      "X-Mantle-Key":account.key
     },
     body:body == null ? undefined : JSON.stringify(body)
   });
@@ -1238,14 +1269,18 @@ let pushing = false;
 let pushAgain = false;
 
 async function pushNow() {
+  if (!currentUser) return;
   if (pushing) {
     pushAgain = true;
     return;
   }
   pushing = true;
+  const user = currentUser;
+  pinnedUser = user;
   setSyncStatus("Guardando…");
   try {
     const remote = await pullRemote();
+    if (user !== currentUser) return;
     if (remote && (remote.revision || 0) > (data.revision || 0)) {
       data = mergeSnapshots(data, remote);
       data.revision = Date.now();
@@ -1253,10 +1288,12 @@ async function pushNow() {
       render();
     }
     await uploadData(data);
+    if (user !== currentUser) return;
     setSyncStatus("Sincronizado");
   } catch (e) {
     setSyncStatus("Sin conexión. Guardado en este equipo.");
   } finally {
+    if (pinnedUser === user) pinnedUser = "";
     pushing = false;
     if (pushAgain) {
       pushAgain = false;
@@ -1273,10 +1310,14 @@ function schedulePush() {
 }
 
 async function pullIfNewer() {
+  if (!currentUser || !syncReady || pushing) return;
   const active = document.activeElement;
   if (active && ["INPUT","SELECT","TEXTAREA"].includes(active.tagName)) return;
+  const user = currentUser;
+  pinnedUser = user;
   try {
     const remote = await pullRemote();
+    if (user !== currentUser) return;
     if (remote && (remote.revision || 0) > (data.revision || 0)) {
       data = remote;
       persistLocal();
@@ -1284,41 +1325,55 @@ async function pullIfNewer() {
       setSyncStatus("Actualizado desde otro equipo");
     }
   } catch (e) {}
+  finally {
+    if (pinnedUser === user) pinnedUser = "";
+  }
 }
 
 async function reconcile() {
-  const remote = await pullRemote();
-  if (!remote) {
-    if (hasMoves(data) || data.revision) await pushNow();
-    return;
-  }
-  const localRev = data.revision || 0;
-  const remoteRev = remote.revision || 0;
-  if (localRev === 0 && hasMoves(data)) {
-    data = mergeSnapshots(data, remote);
-    data.revision = Date.now();
-    persistLocal();
-    await pushNow();
-  } else if (remoteRev > localRev) {
-    data = remote;
-    persistLocal();
-  } else if (localRev > remoteRev) {
-    await pushNow();
+  const user = currentUser;
+  pinnedUser = user;
+  try {
+    const remote = await pullRemote();
+    if (user !== currentUser) return;
+    if (!remote) {
+      if (hasMoves(data) || data.revision) await pushNow();
+      return;
+    }
+    const localRev = data.revision || 0;
+    const remoteRev = remote.revision || 0;
+    if (localRev === 0 && hasMoves(data)) {
+      data = mergeSnapshots(data, remote);
+      data.revision = Date.now();
+      persistLocal();
+      await pushNow();
+    } else if (remoteRev > localRev) {
+      data = remote;
+      persistLocal();
+    } else if (localRev > remoteRev) {
+      await pushNow();
+    }
+  } finally {
+    if (pinnedUser === user) pinnedUser = "";
   }
 }
 
-let syncStarted = false;
+let syncListening = false;
 function startSync() {
-  if (syncStarted) return;
-  syncStarted = true;
+  const user = currentUser;
+  syncReady = false;
   reconcile().then(() => {
+    if (user !== currentUser) return;
     syncReady = true;
     render();
     setSyncStatus("Sincronizado");
   }).catch(() => {
+    if (user !== currentUser) return;
     syncReady = true;
     setSyncStatus("Sin conexión. Guardado en este equipo.");
   });
+  if (syncListening) return;
+  syncListening = true;
   setInterval(() => {
     if (document.visibilityState === "visible") pullIfNewer();
   }, 15000);
@@ -1751,14 +1806,9 @@ function renderSales(sales,target) {
       add.type = "button";
       add.className = "icon-btn add";
       add.textContent = "A";
-      add.title = "Agregar monto";
+      add.title = "Agregar monto y comisión";
       add.addEventListener("click",() => openAddModal(s.id));
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "icon-btn danger";
-      remove.textContent = "🗑";
-      remove.title = "Borrar venta";
-      remove.addEventListener("click",() => deleteSale(s.id));
+      const remove = trashButton("Borrar venta",() => deleteSale(s.id));
       actions.append(edit,add,remove);
       row.appendChild(actions);
       body.appendChild(row);
@@ -1777,6 +1827,17 @@ function renderSales(sales,target) {
     details.appendChild(body);
     target.appendChild(details);
   });
+}
+
+function trashButton(title, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "icon-btn danger";
+  button.title = title;
+  button.setAttribute("aria-label", title);
+  button.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M9 3.2h6l1 1.8h4.2V7H3.8V5h4.2l1-1.8zM8 9h2v9H8V9zm3.9 0h2v9h-2V9zM16 9h2v9h-2V9z"/></svg>';
+  button.addEventListener("click", onClick);
+  return button;
 }
 
 function renderClientSummary(sales) {
@@ -1824,22 +1885,31 @@ function renderClientSummary(sales) {
         fix.className = "icon-btn";
         fix.textContent = "✎";
         fix.addEventListener("click",() => editSale(sale.id));
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "icon-btn danger";
-        remove.textContent = "🗑";
-        remove.addEventListener("click",() => deleteSale(sale.id));
-        line.append(fix,remove);
+        const addOne = document.createElement("button");
+        addOne.type = "button";
+        addOne.className = "icon-btn add";
+        addOne.textContent = "A";
+        addOne.title = "Agregar monto y comisión";
+        addOne.addEventListener("click",() => openAddModal(sale.id));
+        const remove = trashButton("Borrar venta",() => deleteSale(sale.id));
+        line.append(fix,addOne,remove);
         editor.appendChild(line);
       });
       block.appendChild(editor);
     });
-    const removeAll = document.createElement("button");
-    removeAll.type = "button";
-    removeAll.className = "icon-btn danger";
-    removeAll.textContent = "🗑";
-    removeAll.title = "Borrar ventas de este cliente";
-    removeAll.addEventListener("click",() => {
+    const addClient = document.createElement("button");
+    addClient.type = "button";
+    addClient.className = "icon-btn add";
+    addClient.textContent = "A";
+    addClient.title = "Agregar monto y comisión";
+    addClient.addEventListener("click",() => {
+      if (!clientSales.length) {
+        alert("Primero guarda una venta de este cliente.");
+        return;
+      }
+      openAddModal(clientSales[clientSales.length - 1].id);
+    });
+    const removeAll = trashButton("Borrar ventas de este cliente",() => {
       if (!clientSales.length) {
         alert("Este cliente no tiene ventas de hoy.");
         return;
@@ -1851,7 +1921,7 @@ function renderClientSummary(sales) {
       saveData();
       render();
     });
-    actions.append(edit,removeAll);
+    actions.append(edit,addClient,removeAll);
     row.appendChild(actions);
     block.appendChild(row);
     target.appendChild(block);
@@ -2107,9 +2177,32 @@ $("showPassword").addEventListener("click",() => {
 function showApp() {
   $("loginScreen").classList.add("hidden");
   $("app").classList.remove("hidden");
+  $("accountLabel").textContent = currentUser;
   applyTheme();
   render();
   startSync();
+}
+
+function enterAccount(user) {
+  currentUser = user;
+  localStorage.setItem(SESSION_KEY,user);
+  syncReady = false;
+  data = loadData();
+  archivePastDays();
+  showApp();
+}
+
+function leaveAccount() {
+  currentUser = "";
+  syncReady = false;
+  pinnedUser = "";
+  localStorage.removeItem(SESSION_KEY);
+  data = {current:emptyCash(),history:[]};
+  $("app").classList.add("hidden");
+  $("loginScreen").classList.remove("hidden");
+  $("username").value = "";
+  $("password").value = "";
+  $("loginError").textContent = "";
 }
 
 $("receivedNet").addEventListener("input",() => {
@@ -2130,21 +2223,23 @@ $("receivedNet").addEventListener("input",() => {
   saveData();
 });
 
+$("logoutButton").addEventListener("click",leaveAccount);
+
 $("loginForm").addEventListener("submit",event => {
   event.preventDefault();
   const user = $("username").value.trim().toUpperCase();
   const pass = $("password").value;
-  if (user === "CEO" && pass === "1234") {
-    localStorage.setItem(SESSION_KEY,"CEO");
+  if ((user === "CEO" || user === "ADMIN") && pass === "1234") {
     $("loginError").textContent = "";
-    showApp();
+    enterAccount(user);
   } else {
     $("loginError").textContent = "Usuario o contraseña incorrectos.";
   }
 });
 
 fillRates();
-if (localStorage.getItem(SESSION_KEY) === "CEO") showApp();
+const savedUser = localStorage.getItem(SESSION_KEY);
+if (savedUser === "CEO" || savedUser === "ADMIN") enterAccount(savedUser);
 calculate();
 
 if ("serviceWorker" in navigator) {

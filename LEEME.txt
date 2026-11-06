@@ -21,12 +21,14 @@ CULQUI - INSTALACIÓN
 7. En Android se puede abrir el mismo enlace en Chrome y elegir "Instalar aplicación".
 
 ACCESO
-Usuario: CEO
-Clave: 1234
-Al ingresar una vez, la cuenta queda guardada y la próxima vez entra sola.
+Tu usuario: CEO
+El otro usuario: ADMIN
+Clave de los dos: 1234
+Al ingresar una vez, esa cuenta queda guardada y la próxima vez entra sola.
+Cada usuario ve solo su caja. Salir permite cambiar de cuenta.
 
 IMPORTANTE:
-Los movimientos se guardan en este equipo y también en la nube.
-La computadora, la laptop y el enlace público muestran la misma caja.
+Los movimientos de cada usuario se guardan aparte, en este equipo y en la nube.
+La computadora, la laptop y el enlace público muestran la caja de la cuenta con la que entraste.
 No borres los datos del sitio ni el almacenamiento de Chrome.
 El archivo CULQUI.apk instalado es una copia antigua: para ver los cambios hay que abrir el enlace de arriba.
