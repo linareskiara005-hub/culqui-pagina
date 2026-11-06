@@ -325,6 +325,8 @@ details[open] > .group-head:after {content:"−"}
   margin-top:12px;
 }
 .total-box strong {color:var(--accent)}
+.history-day {margin:0 0 14px}
+.history-day h3 {margin:0 0 8px;font-size:18px;font-weight:800}
 .history-item {padding:0}
 .history-item > summary {
   cursor:pointer;list-style:none;padding:16px;
@@ -431,7 +433,6 @@ details[open] > .group-head:after {content:"−"}
       </div>
       <p id="loginError" class="login-error"></p>
       <button class="btn" type="submit" style="width:100%">INGRESAR A CULQUI →</button>
-      <p class="subtitle" style="margin:12px 0 0">CEO es tu caja. ADMIN es la otra caja. Al entrar, la cuenta queda guardada.</p>
     </form>
     <p class="footer-note">Tu control de ventas y caja</p>
   </div>
@@ -587,9 +588,7 @@ details[open] > .group-head:after {content:"−"}
     <!-- HISTORIAL -->
     <section id="historyPage" class="hidden section-purple">
       <div class="panel">
-        <h2 class="panel-title">Historial por cierre</h2>
-        <p class="subtitle">Cada cierre suma solo ese día. Un día no se mezcla con el siguiente.</p>
-        <p class="subtitle" id="historyCountLine">0 cierres</p>
+        <h2 class="panel-title">Historial por día</h2>
         <div id="historyList"></div>
       </div>
     </section>
@@ -1974,24 +1973,23 @@ function renderHistory() {
       title:dayTitle(dayKey(close.closedAt || close.openedAt)),
       when:dateTime(close.closedAt || close.openedAt),
       sales,
-      totals:close.totals || totals(sales),
+      totals:totals(sales),
       received:close.receivedNet,
       observations:close.observations || "",
       open:false
     });
   });
-  $("historyCountLine").textContent = blocks.length + (blocks.length === 1 ? " cierre" : " cierres");
 
   const openSales = data.current.sales || [];
   if (openSales.length) {
     blocks.unshift({
-      title:dayTitle(dayKey(data.current.openedAt || Date.now())) + " · Caja abierta",
-      when:"Todavía no está cerrada",
+      title:dayTitle(dayKey(Date.now())),
+      when:"Caja de hoy, todavía abierta",
       sales:openSales,
       totals:totals(openSales),
       received:data.current.receivedNet,
       observations:"",
-      open:true
+      open:false
     });
   }
 
@@ -2002,30 +2000,31 @@ function renderHistory() {
 
   blocks.forEach(block => {
     const t = block.totals;
+    const day = document.createElement("article");
+    day.className = "history-day";
+    const headingDay = document.createElement("h3");
+    headingDay.textContent = block.title;
+    day.appendChild(headingDay);
+
+    const sums = document.createElement("div");
+    sums.className = "stats";
+    sums.innerHTML = `
+      <div class="stat"><span>TOTAL VENDIDO</span><strong>${money(t.sales)}</strong></div>
+      <div class="stat"><span>COMISIONES</span><strong>${money(t.commission)}</strong></div>
+      <div class="stat"><span>DEPÓSITO NETO</span><strong>${money(t.net)}</strong></div>
+    `;
+    day.appendChild(sums);
+
     const item = document.createElement("details");
     item.className = "history-item";
     item.open = block.open;
 
     const summary = document.createElement("summary");
-    summary.innerHTML = `
-      <span>${block.title}</span>
-      <span class="badge">Ventas ${money(t.sales)} · Comisión ${money(t.commission)} · Depósito ${money(t.net)}</span>
-    `;
+    summary.textContent = "Ver detalle de este día";
     item.appendChild(summary);
 
     const body = document.createElement("div");
     body.className = "history-details";
-
-    const sums = document.createElement("div");
-    sums.className = "day-sums";
-    sums.innerHTML = `
-      <div><span>VENTAS</span><strong>${money(t.sales)}</strong></div>
-      <div><span>COMISIÓN</span><strong>${money(t.commission)}</strong></div>
-      <div><span>DEPÓSITO</span><strong>${money(t.net)}</strong></div>
-      <div><span>NETO RECIBIDO</span><strong>${receivedValue(block.received) == null ? "—" : money(block.received)}</strong></div>
-      <div><span>DIFERENCIA</span><strong>${differenceText(t.net, block.received)}</strong></div>
-    `;
-    body.appendChild(sums);
     if (block.when) {
       const when = document.createElement("p");
       when.className = "subtitle";
@@ -2057,7 +2056,8 @@ function renderHistory() {
     renderSales(block.sales,salesContainer);
     body.appendChild(salesContainer);
     item.appendChild(body);
-    target.appendChild(item);
+    day.appendChild(item);
+    target.appendChild(day);
   });
 }
 
