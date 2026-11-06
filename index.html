@@ -490,6 +490,10 @@ details[open] > .group-head:after {content:"−"}
         <form id="saleForm">
           <div class="grid">
             <div class="field">
+              <label>FECHA</label>
+              <input id="saleDate" type="date" required>
+            </div>
+            <div class="field">
               <label>CLIENTE</label>
               <select id="client" required>
                 <option value="">Seleccionar cliente</option>
@@ -828,6 +832,56 @@ function archivePastDays() {
   data.current.sales = todaySales;
   if (!todaySales.length) data.current = emptyCash();
   saveData();
+}
+
+function inputDateValue(date) {
+  const d = date || new Date();
+  const month = String(d.getMonth() + 1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return d.getFullYear() + "-" + month + "-" + day;
+}
+
+function timeFromInputDate(value) {
+  const parts = String(value || "").split("-").map(Number);
+  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return now();
+  const clock = new Date();
+  const date = new Date(parts[0], parts[1] - 1, parts[2], clock.getHours(), clock.getMinutes(), clock.getSeconds(), 0);
+  if (Number.isNaN(date.getTime())) return now();
+  return date.toISOString();
+}
+
+function setSaleDate(value) {
+  const field = $("saleDate");
+  if (!field) return;
+  const today = inputDateValue(new Date());
+  field.max = today;
+  field.value = value || today;
+}
+
+function placeSale(sale) {
+  const key = dayKey(sale.time);
+  if (key === dayKey(Date.now())) {
+    data.current.sales.push(sale);
+    return;
+  }
+  const sameDay = (data.history || []).filter(close => (close.day || dayKey(close.closedAt || close.openedAt)) === key);
+  if (sameDay.length) {
+    const close = sameDay[0];
+    close.sales = close.sales || [];
+    close.sales.push(sale);
+    close.totals = totals(close.sales);
+    close.day = key;
+    return;
+  }
+  data.history.unshift({
+    id:Date.now() + Math.floor(Math.random() * 1000),
+    openedAt:sale.time,
+    closedAt:sale.time,
+    observations:"",
+    sales:[sale],
+    totals:totals([sale]),
+    day:key
+  });
 }
 
 function findSale(id) {
@@ -1696,7 +1750,7 @@ $("saleForm").addEventListener("submit",event => {
   const sale = {
     id:Date.now(),
     editedAt:now(),
-    time:now(),
+    time:timeFromInputDate($("saleDate").value),
     client,
     reference,
     account:clients[client].account,
@@ -1718,11 +1772,13 @@ $("saleForm").addEventListener("submit",event => {
     sale.deposit = net;
   }
 
-  data.current.sales.push(sale);
+  placeSale(sale);
 
   saveData();
   pendingSplit = null;
+  const keptDate = $("saleDate").value;
   $("saleForm").reset();
+  setSaleDate(keptDate);
   $("reference").innerHTML = '<option value="">Primero selecciona cliente</option>';
   calculate();
   render();
@@ -2237,6 +2293,7 @@ $("loginForm").addEventListener("submit",event => {
   }
 });
 
+setSaleDate();
 fillRates();
 const savedUser = localStorage.getItem(SESSION_KEY);
 if (savedUser === "CEO" || savedUser === "ADMIN") enterAccount(savedUser);
