@@ -338,9 +338,15 @@ details[open] > .group-head:after {content:"−"}
 .ref-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0}
 .ref-metrics span {display:block;color:var(--muted);font-size:13px;font-weight:700}
 .ref-metrics b {font-size:16px}
-.ref-bank {display:grid;grid-template-columns:88px 1fr;gap:8px;align-items:center}
+.ref-bank {display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .ref-bank label {font-size:14px;font-weight:800;margin:0}
-.ref-diff {grid-column:1 / -1;font-size:16px;font-weight:800}
+.ref-bank input {flex:1;min-width:140px}
+.bank-fixed {
+  flex:1;min-width:180px;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:10px 12px;font-size:18px;font-weight:800;
+}
+.bank-fixed span {display:block;color:var(--muted);font-size:13px;font-weight:700}
+.ref-diff {flex-basis:100%;font-size:16px;font-weight:800}
 .ref-diff.down {color:#d94c5b}
 .ref-diff.up {color:#087f78}
 .history-item {padding:0}
@@ -766,15 +772,23 @@ function takeBanks(sales) {
   return picked;
 }
 
-function bankCompare(amount, deposit, bank) {
+function signedMoney(value) {
+  const rounded = Math.round(Number(value) * 100) / 100;
+  if (rounded < 0) return "-" + money(Math.abs(rounded));
+  return money(rounded);
+}
+
+function bankCompare(amount, bank) {
   const got = receivedValue(bank);
-  if (got == null || !Number(amount)) return {text:"—",tone:""};
-  const percent = Math.round(((Number(amount) - got) / Number(amount)) * 10000) / 100;
-  const shown = formatPercent(Math.abs(percent));
-  const value = money(Math.round(Math.abs(Number(amount) - got) * 100) / 100);
-  if (Math.abs(got - Number(deposit)) < 0.009) return {text:shown + "% = " + value,tone:""};
-  if (got < Number(deposit)) return {text:"-" + shown + "% = " + value,tone:"down"};
-  return {text:"+" + shown + "% = " + value,tone:"up"};
+  const sold = Number(amount);
+  if (got == null || !sold) return {text:"—",tone:""};
+  const diff = Math.round((sold - got) * 100) / 100;
+  const percent = Math.round(((got / sold) - 1) * 10000) / 100;
+  const shown = (percent > 0 ? "+" : "") + formatPercent(percent) + "%";
+  return {
+    text:shown + " = " + signedMoney(diff),
+    tone:percent < 0 ? "down" : percent > 0 ? "up" : ""
+  };
 }
 
 const $ = id => document.getElementById(id);
@@ -2116,7 +2130,7 @@ function renderHistory() {
     sums.innerHTML = `
       <div class="stat"><span>TOTAL VENDIDO</span><strong>${money(t.sales)}</strong></div>
       <div class="stat"><span>COMISIONES</span><strong>${money(t.commission)}</strong></div>
-      <div class="stat"><span>DEPÓSITO NETO</span><strong>${money(t.net)}</strong></div>
+      <div class="stat"><span>DEPÓSITO</span><strong>${money(t.net)}</strong></div>
       <div class="stat"><span>BANCO</span></div>
       <div class="stat"><span>DIFERENCIA</span></div>
     `;
@@ -2135,7 +2149,7 @@ function renderHistory() {
       });
       sum = Math.round(sum * 100) / 100;
       bankNode.textContent = any ? money(sum) : "—";
-      const compared = complete && any ? bankCompare(t.sales, t.net, sum) : {text:"—",tone:""};
+      const compared = complete && any ? bankCompare(t.sales, sum) : {text:"—",tone:""};
       diffNode.textContent = compared.text;
       diffNode.className = compared.tone;
     }
@@ -2159,37 +2173,60 @@ function renderHistory() {
       `;
       const bankRow = document.createElement("div");
       bankRow.className = "ref-bank";
-      const label = document.createElement("label");
-      label.textContent = "BANCO";
-      const input = document.createElement("input");
-      input.type = "number";
-      input.min = "0";
-      input.step = "0.01";
-      input.inputMode = "decimal";
-      input.placeholder = "Lo que depositó el banco";
-      const saved = receivedValue(block.banks[key]);
-      input.value = saved == null ? "" : String(saved);
       const diff = document.createElement("div");
       diff.className = "ref-diff";
-      const paintRow = () => {
-        const compared = bankCompare(gt.sales, gt.net, block.banks[key]);
-        diff.textContent = compared.text === "—" ? "Escribe el banco para ver la diferencia." : compared.text;
-        diff.className = "ref-diff " + compared.tone;
-      };
-      input.addEventListener("input",() => {
-        const raw = input.value.trim();
-        if (raw === "") delete block.banks[key];
-        else {
-          const value = Number(raw);
-          if (!Number.isFinite(value)) return;
-          block.banks[key] = Math.round(value * 100) / 100;
+      const drawBank = () => {
+        bankRow.innerHTML = "";
+        const savedBank = receivedValue(block.banks[key]);
+        if (savedBank == null) {
+          const label = document.createElement("label");
+          label.textContent = "BANCO";
+          const input = document.createElement("input");
+          input.type = "number";
+          input.min = "0";
+          input.step = "0.01";
+          input.inputMode = "decimal";
+          input.placeholder = "Lo que depositó el banco";
+          const accept = document.createElement("button");
+          accept.type = "button";
+          accept.className = "btn small";
+          accept.textContent = "Aceptar";
+          accept.addEventListener("click",() => {
+            const raw = input.value.trim();
+            const value = Number(raw);
+            if (raw === "" || !Number.isFinite(value) || value < 0) {
+              alert("Escribe el monto que ingresó del banco.");
+              return;
+            }
+            block.banks[key] = Math.round(value * 100) / 100;
+            saveData();
+            drawBank();
+            paintDay();
+          });
+          bankRow.append(label, input, accept, diff);
+          diff.textContent = "Acepta el banco para dejarlo fijo y ver la diferencia.";
+          diff.className = "ref-diff";
+          return;
         }
-        paintRow();
-        paintDay();
-        saveData();
-      });
-      paintRow();
-      bankRow.append(label, input, diff);
+        const fixed = document.createElement("div");
+        fixed.className = "bank-fixed";
+        fixed.innerHTML = `<span>INGRESÓ DEL BANCO</span>${money(savedBank)}`;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "btn small danger";
+        remove.textContent = "Borrar";
+        remove.addEventListener("click",() => {
+          delete block.banks[key];
+          saveData();
+          drawBank();
+          paintDay();
+        });
+        const compared = bankCompare(gt.sales, savedBank);
+        diff.textContent = compared.text;
+        diff.className = "ref-diff " + compared.tone;
+        bankRow.append(fixed, remove, diff);
+      };
+      drawBank();
       card.appendChild(bankRow);
       day.appendChild(card);
     });
