@@ -255,7 +255,11 @@ input:focus,select:focus {
   padding:8px 4px;border-bottom:1px solid var(--line);
   font-size:20px;
 }
-.client-block:last-child .client-line {border-bottom:0}
+.client-block {border-bottom:1px solid var(--line);padding-bottom:4px}
+.client-block:last-child {border-bottom:0}
+.client-line {border-bottom:0}
+.client-refs {padding:0 0 6px 4px}
+.client-refs .sale-group {margin:6px 0}
 .client-name {font-weight:800;min-width:140px;font-size:20px}
 .client-data {color:var(--muted);font-size:19px}
 .client-total {font-weight:800;color:var(--accent);font-size:22px}
@@ -613,12 +617,6 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
         <p class="subtitle">El lápiz corrige el monto y la comisión. La papelera borra esa venta.</p>
         <div id="clientSummary" class="client-lines"></div>
         <button type="button" class="btn gray small" id="clearTodayButton">Borrar datos de hoy</button>
-      </div>
-
-      <div class="panel">
-        <h2 class="panel-title">Ventas por cliente y referencia</h2>
-        <p class="subtitle">Toca cada grupo para desplegar sus ventas individuales.</p>
-        <div id="salesList"></div>
       </div>
     </section>
 
@@ -1930,7 +1928,7 @@ function groupSales(sales) {
   return Object.values(groups);
 }
 
-function renderSales(sales,target) {
+function renderSales(sales,target,nested) {
   target.innerHTML = "";
 
   if (!sales.length) {
@@ -1938,7 +1936,16 @@ function renderSales(sales,target) {
     return;
   }
 
-  groupSales(sales).forEach(group => {
+  const groups = groupSales(sales);
+  if (nested) {
+    groups.sort((a, b) => {
+      const left = POS_ORDER.indexOf(a.reference);
+      const right = POS_ORDER.indexOf(b.reference);
+      return (left < 0 ? 99 : left) - (right < 0 ? 99 : right);
+    });
+  }
+
+  groups.forEach(group => {
     const t = totals(group.sales);
     const first = group.sales[0];
     const account = accountOf(first);
@@ -1948,8 +1955,11 @@ function renderSales(sales,target) {
 
     const summary = document.createElement("summary");
     summary.className = "group-head";
+    const title = nested
+      ? refLabel(group.reference)
+      : group.client + " · " + refLabel(group.reference);
     summary.innerHTML = `
-      <span class="group-title">${escapeHtml(group.client)} · ${escapeHtml(refLabel(group.reference))}</span>
+      <span class="group-title">${escapeHtml(title)}</span>
       <span class="group-meta">${group.sales.length} venta(s) · ${money(t.sales)}</span>
     `;
     details.appendChild(summary);
@@ -1957,15 +1967,17 @@ function renderSales(sales,target) {
     const body = document.createElement("div");
     body.className = "group-body";
 
-    const accountBox = document.createElement("div");
-    accountBox.className = "account-line";
-    accountBox.innerHTML = `
-      <strong>${escapeHtml(group.client)}</strong>
-      &nbsp; · &nbsp; Cuenta: ${escapeHtml(account.account)}
-      &nbsp; · &nbsp; CTA: ${escapeHtml(account.cta)}
-      &nbsp; · &nbsp; Ref.: ${escapeHtml(refLabel(group.reference))}
-    `;
-    body.appendChild(accountBox);
+    if (!nested) {
+      const accountBox = document.createElement("div");
+      accountBox.className = "account-line";
+      accountBox.innerHTML = `
+        <strong>${escapeHtml(group.client)}</strong>
+        &nbsp; · &nbsp; Cuenta: ${escapeHtml(account.account)}
+        &nbsp; · &nbsp; CTA: ${escapeHtml(account.cta)}
+        &nbsp; · &nbsp; Ref.: ${escapeHtml(refLabel(group.reference))}
+      `;
+      body.appendChild(accountBox);
+    }
 
     group.sales.forEach(s => {
       const row = document.createElement("div");
@@ -2113,6 +2125,12 @@ function renderClientSummary(sales) {
     actions.append(edit,addClient,removeAll);
     row.appendChild(actions);
     block.appendChild(row);
+    if (clientSales.length) {
+      const refs = document.createElement("div");
+      refs.className = "client-refs";
+      renderSales(clientSales, refs, true);
+      block.appendChild(refs);
+    }
     target.appendChild(block);
   });
 }
@@ -2374,7 +2392,6 @@ function render() {
   $("cashInfo").textContent = "Hora de apertura de esta caja: " + dateTime(data.current.openedAt);
 
   renderClientSummary(sales);
-  renderSales(sales,$("salesList"));
   renderBreakdown(sales,$("closingBreakdown"));
   renderHistory();
 }
