@@ -283,6 +283,10 @@ input:focus,select:focus {
 .split-total strong {color:var(--accent)}
 .choice-row {display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:0}
 .choice-row .btn {width:100%}
+.wipe-list {display:grid;gap:8px;margin:12px 0 14px}
+.wipe-list .btn {width:100%}
+.history-find {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.history-find input {max-width:220px}
 .modal {
   position:fixed;inset:0;z-index:40;
   background:rgba(16,36,58,.48);
@@ -537,7 +541,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
         <span id="syncStatus" class="sync-status"></span>
         <button class="btn gray small" id="logoutButton" type="button">Salir</button>
         <button class="btn gray small" id="themeButton">☾ Oscuro</button>
-        <button type="button" class="btn gray small" id="clearMonthButton">Borrar historial del mes</button>
+        <button type="button" class="btn gray small" id="clearHistoryButton">BORRAR HISTORIAL</button>
       </div>
     </div>
 
@@ -646,12 +650,31 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <section id="historyPage" class="hidden section-purple">
       <div class="panel">
         <h2 class="panel-title">Historial por día</h2>
+        <div class="history-find">
+          <label for="historyDate">FECHA</label>
+          <input id="historyDate" type="date">
+          <button type="button" class="btn gray small" id="historyDateAll">Ver todo</button>
+        </div>
         <div id="historyList"></div>
       </div>
     </section>
 
     <p class="footer-note">CULQUI · Control de ventas, caja y comisión</p>
   </main>
+</div>
+
+<div id="clearModal" class="modal hidden">
+  <div class="modal-card">
+    <h2 class="panel-title">Borrar historial</h2>
+    <p class="subtitle">Elige cuánto historial cerrado quieres borrar. La caja de hoy se conserva.</p>
+    <div class="wipe-list">
+      <button type="button" class="btn gray" data-back="4">Hace 5 días</button>
+      <button type="button" class="btn gray" data-back="6">Una semana</button>
+      <button type="button" class="btn gray" data-back="29">Un mes</button>
+      <button type="button" class="btn gray" data-back="364">Un año</button>
+    </div>
+    <button type="button" class="btn gray" id="clearCancel">Cancelar</button>
+  </div>
 </div>
 
 <div id="addModal" class="modal hidden">
@@ -897,9 +920,22 @@ function loadData() {
 
 let data = {current:{id:0,openedAt:"",sales:[]},history:[]};
 
-function closeMonth(close) {
+function closeDay(close) {
   const key = close && (close.day || dayKey(close.closedAt || close.openedAt));
-  return String(key || "").slice(0, 7);
+  return String(key || "").slice(0, 10);
+}
+
+function prettyDay(key) {
+  const parts = String(key || "").split("-");
+  if (parts.length !== 3) return key || "";
+  return parts[2] + "/" + parts[1] + "/" + parts[0];
+}
+
+function daysAgoKey(daysBack) {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() - daysBack);
+  return inputDateValue(d);
 }
 
 function dayKey(value) {
@@ -2167,9 +2203,11 @@ function renderHistory() {
   const blocks = [];
   (data.history || []).forEach(close => {
     const sales = close.sales || [];
+    const day = closeDay(close);
     close.banks = close.banks || {};
     blocks.push({
-      title:dayTitle(dayKey(close.closedAt || close.openedAt)),
+      day,
+      title:dayTitle(day),
       when:dateTime(close.closedAt || close.openedAt),
       sales,
       totals:totals(sales),
@@ -2182,9 +2220,11 @@ function renderHistory() {
 
   const openSales = data.current.sales || [];
   if (openSales.length) {
+    const day = dayKey(Date.now());
     data.current.banks = data.current.banks || {};
     blocks.unshift({
-      title:dayTitle(dayKey(Date.now())),
+      day,
+      title:dayTitle(day),
       when:"Caja de hoy, todavía abierta",
       sales:openSales,
       totals:totals(openSales),
@@ -2195,17 +2235,22 @@ function renderHistory() {
     });
   }
 
-  if (!blocks.length) {
-    target.innerHTML = '<div class="empty">Todavía no hay cierres.</div>';
+  const wanted = $("historyDate").value;
+  const shown = wanted ? blocks.filter(block => block.day === wanted) : blocks;
+
+  if (!shown.length) {
+    target.innerHTML = wanted
+      ? '<div class="empty">Ese día no tiene movimientos.</div>'
+      : '<div class="empty">Todavía no hay cierres.</div>';
     return;
   }
 
-  blocks.forEach(block => {
+  shown.forEach(block => {
     const t = block.totals;
     const day = document.createElement("article");
     day.className = "history-day";
     const headingDay = document.createElement("h3");
-    headingDay.textContent = block.title;
+    headingDay.textContent = prettyDay(block.day) + " · " + block.title;
     day.appendChild(headingDay);
 
     const groups = groupSales(block.sales).sort((a, b) => {
@@ -2392,23 +2437,45 @@ function render() {
   renderHistory();
 }
 
-$("clearMonthButton").addEventListener("click",() => {
-  const month = dayKey(Date.now()).slice(0, 7);
-  const doomed = (data.history || []).filter(close => closeMonth(close) === month);
-  const label = new Date().toLocaleDateString("es-PE",{month:"long",year:"numeric"});
-  const pretty = label.charAt(0).toUpperCase() + label.slice(1);
+$("clearHistoryButton").addEventListener("click",() => {
+  $("clearModal").classList.remove("hidden");
+});
+
+$("clearCancel").addEventListener("click",() => {
+  $("clearModal").classList.add("hidden");
+});
+
+$("clearModal").querySelector(".wipe-list").addEventListener("click", event => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  const back = Number(button.dataset.back);
+  const from = daysAgoKey(back);
+  const today = inputDateValue(new Date());
+  const doomed = (data.history || []).filter(close => {
+    const day = closeDay(close);
+    return day >= from && day <= today;
+  });
   if (!doomed.length) {
-    alert("Este mes no tiene historial para borrar.");
+    alert("No hay historial entre el " + prettyDay(from) + " y el " + prettyDay(today) + ".");
     return;
   }
-  if (!confirm("¿Borrar el historial de " + pretty + "? Se eliminan " + doomed.length + " días. La caja de hoy se conserva.")) return;
+  const count = doomed.length === 1 ? "1 día" : doomed.length + " días";
+  if (!confirm("¿Borrar " + button.textContent.toLowerCase() + "? Del " + prettyDay(from) + " al " + prettyDay(today) + ". Se eliminan " + count + ". La caja de hoy se conserva.")) return;
   doomed.forEach(close => {
     (close.sales || []).forEach(sale => rememberDelete(sale.id));
     rememberDelete(close.id);
   });
-  data.history = data.history.filter(close => closeMonth(close) !== month);
+  const gone = new Set(doomed.map(close => close.id));
+  data.history = data.history.filter(close => !gone.has(close.id));
   saveData();
   render();
+  $("clearModal").classList.add("hidden");
+});
+
+$("historyDate").addEventListener("change",() => renderHistory());
+$("historyDateAll").addEventListener("click",() => {
+  $("historyDate").value = "";
+  renderHistory();
 });
 
 $("clearTodayButton").addEventListener("click",() => {
