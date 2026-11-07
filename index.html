@@ -457,17 +457,6 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 .password-wrap input {padding-right:75px}
 .login-error {font-size:17px;color:#e05b68}
 .footer-note {text-align:center;color:var(--muted);font-size:16px;margin-top:8px}
-.net-box {
-  display:grid;grid-template-columns:1.1fr 1.3fr 1.2fr;
-  gap:8px;margin:0 0 10px;
-  background:var(--card);border:1px solid var(--line);
-  border-radius:14px;padding:10px 12px;
-}
-.net-box span,.net-box label {
-  display:block;color:var(--muted);font-size:16px;font-weight:700;margin-bottom:4px;
-}
-.net-box strong {display:block;font-family:"Manrope",sans-serif;font-size:24px}
-.net-box input {padding:8px 10px}
 .sync-status {font-size:15px;font-weight:700;color:var(--muted);align-self:center}
 
 @media(max-width:650px) {
@@ -487,7 +476,6 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
   .stat strong {font-size:26px}
   .stat span {font-size:17px}
   .grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .net-box strong {font-size:18px}
   .client-line {align-items:center;flex-wrap:wrap;gap:8px}
   .client-name {width:100%}
   .row-actions {margin-left:auto}
@@ -641,11 +629,6 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
           <div class="stat"><span>TOTAL VENDIDO</span><strong id="closeSales">S/ 0.00</strong></div>
           <div class="stat"><span>COMISIONES</span><strong id="closeCommission">S/ 0.00</strong></div>
           <div class="stat"><span>DEPÓSITO NETO</span><strong id="closeNet">S/ 0.00</strong></div>
-        </div>
-        <div class="net-box">
-          <div><span>NETO CALCULADO</span><strong id="closeCalculated">S/ 0.00</strong></div>
-          <div><span>NETO RECIBIDO</span><strong id="closeReceived">—</strong></div>
-          <div><span>DIFERENCIA DE COMISIÓN</span><strong id="closeDifference">—</strong></div>
         </div>
 
         <h3 style="font-size:16px;margin:12px 0 8px">Totales por cliente y referencia</h3>
@@ -2154,12 +2137,6 @@ function receivedValue(value) {
   return Number(value);
 }
 
-function differenceText(net, received) {
-  const got = receivedValue(received);
-  if (got == null) return "—";
-  return money(Math.round((Number(net) - got) * 100) / 100);
-}
-
 function renderHistory() {
   const target = $("historyList");
   target.innerHTML = "";
@@ -2379,10 +2356,6 @@ function render() {
   $("totalSales").textContent = money(t.sales);
   $("totalCommission").textContent = money(t.commission);
   $("totalNet").textContent = money(t.net);
-  $("closeCalculated").textContent = money(t.net);
-  const received = receivedValue(data.current.receivedNet);
-  $("closeReceived").textContent = received == null ? "—" : money(received);
-  $("closeDifference").textContent = differenceText(t.net, received);
 
   $("closeSales").textContent = money(t.sales);
   $("closeCommission").textContent = money(t.commission);
