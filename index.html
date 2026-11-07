@@ -348,8 +348,6 @@ details[open] > .group-head:after {content:"−"}
   margin-top:12px;
 }
 .total-box strong {color:var(--accent)}
-.history-head {display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.history-head .panel-title {margin:0}
 .history-day {
   margin:0 0 16px;padding:14px;border-radius:16px;
   background:linear-gradient(180deg,#f7f3ff,#fff 70px);
@@ -539,6 +537,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
         <span id="syncStatus" class="sync-status"></span>
         <button class="btn gray small" id="logoutButton" type="button">Salir</button>
         <button class="btn gray small" id="themeButton">☾ Oscuro</button>
+        <button type="button" class="btn gray small" id="clearMonthButton">Borrar historial del mes</button>
       </div>
     </div>
 
@@ -646,10 +645,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <!-- HISTORIAL -->
     <section id="historyPage" class="hidden section-purple">
       <div class="panel">
-        <div class="history-head">
-          <h2 class="panel-title">Historial por día</h2>
-          <button type="button" class="btn gray small" id="clearMonthButton">Borrar historial del mes</button>
-        </div>
+        <h2 class="panel-title">Historial por día</h2>
         <div id="historyList"></div>
       </div>
     </section>
