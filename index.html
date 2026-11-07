@@ -785,7 +785,7 @@ const SPLIT_DINERS_RATE = 0.0343;
 const SPLIT_NORMAL_RATE = 0.0285;
 
 const clients = {
-  "Benito A": {account:"7749",cta:"3032",refs:["R1","R2","R3"]},
+  "Benito A": {account:"7748",cta:"3032",refs:["R1","R2","R3"]},
   "Benito B": {account:"9309",cta:"1093",refs:["RL","S"]},
   "Gambusilandia": {account:"7859",cta:"68091",refs:["G1","G2"]}
 };
@@ -1578,8 +1578,8 @@ function escapeHtml(value) {
 function accountOf(s) {
   const info = clients[s.client] || {};
   return {
-    account:s.account || info.account || "—",
-    cta:s.cta || info.cta || "—"
+    account:info.account || s.account || "—",
+    cta:info.cta || s.cta || "—"
   };
 }
 
