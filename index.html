@@ -849,20 +849,23 @@ function diffPercent(total, bank) {
   return Math.round(((got / sold) - 1) * 10000) / 100;
 }
 
-function percentText(value) {
-  if (value == null || !Number.isFinite(Number(value))) return "—";
-  const n = Math.round(Number(value) * 100) / 100;
-  const digits = Math.abs(n).toFixed(2);
-  if (n > 0) return "+" + digits + "%";
-  if (n < 0) return "-" + digits + "%";
-  return "0.00%";
+function bankView(sold, deposit, bank) {
+  const raw = diffPercent(sold, bank);
+  if (raw == null) return null;
+  const net = Math.round(Number(deposit) * 100);
+  const got = Math.round(Number(bank) * 100);
+  const digits = Math.abs(raw).toFixed(2);
+  const gap = (got - net) / 100;
+  if (got === net) return {percent:digits + "%", tone:"", gap:0};
+  if (got < net) return {percent:"-" + digits + "%", tone:"down", gap};
+  return {percent:"+" + digits + "%", tone:"up", gap};
 }
 
-function depositGap(deposit, bank) {
-  const got = receivedValue(bank);
-  const net = Number(deposit);
-  if (got == null || !Number.isFinite(net)) return null;
-  return Math.round(Math.abs(net - got) * 100) / 100;
+function gapText(gap) {
+  const n = Math.round(Number(gap) * 100) / 100;
+  if (n > 0) return "+" + money(n);
+  if (n < 0) return "-" + money(Math.abs(n));
+  return money(0);
 }
 
 const $ = id => document.getElementById(id);
@@ -2219,7 +2222,7 @@ function renderHistory() {
     function paintDay() {
       let bankSum = 0;
       let soldSum = 0;
-      let diffSum = 0;
+      let depositSum = 0;
       let any = false;
       groups.forEach(group => {
         const value = receivedValue(block.banks[groupKey(group.client, group.reference)]);
@@ -2228,15 +2231,15 @@ function renderHistory() {
         bankSum += value;
         const gt = totals(group.sales);
         soldSum += Number(gt.sales);
-        diffSum += Math.abs(Number(gt.net) - value);
+        depositSum += Number(gt.net);
       });
       bankSum = Math.round(bankSum * 100) / 100;
       soldSum = Math.round(soldSum * 100) / 100;
-      diffSum = Math.round(diffSum * 100) / 100;
-      const pct = diffPercent(soldSum, bankSum);
+      depositSum = Math.round(depositSum * 100) / 100;
+      const view = bankView(soldSum, depositSum, bankSum);
       bankNode.textContent = any ? money(bankSum) : "—";
-      diffNode.textContent = any ? percentText(pct) + " · " + money(diffSum) : "—";
-      diffNode.className = pct > 0 ? "up" : pct < 0 ? "down" : "";
+      diffNode.textContent = any && view ? view.percent + " · " + gapText(view.gap) : "—";
+      diffNode.className = view ? view.tone : "";
     }
 
     groups.forEach((group, index) => {
@@ -2304,10 +2307,9 @@ function renderHistory() {
           drawBank();
           paintDay();
         });
-        const gap = depositGap(gt.net, savedBank);
-        const percent = diffPercent(gt.sales, savedBank);
-        diff.textContent = "Diferencia " + money(gap) + " · " + percentText(percent);
-        diff.className = "ref-diff " + (percent > 0 ? "up" : percent < 0 ? "down" : "");
+        const view = bankView(gt.sales, gt.net, savedBank);
+        diff.textContent = "Diferencia " + gapText(view.gap) + " · " + view.percent;
+        diff.className = "ref-diff " + view.tone;
         bankRow.append(fixed, remove, diff);
       };
       drawBank();
