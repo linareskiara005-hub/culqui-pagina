@@ -842,13 +842,13 @@ function diffPercent(total, bank) {
   const sold = Number(total);
   const got = Number(bank);
   if (!sold || !Number.isFinite(got)) return null;
-  const raw = Math.abs(((got / sold) - 1) * 100);
-  return Math.trunc(raw * 1000) / 1000;
+  return Math.round(((got / sold) - 1) * 100);
 }
 
 function percentText(value) {
-  if (value == null) return "—";
-  return (Math.trunc(Math.abs(Number(value)) * 1000) / 1000).toFixed(3) + "%";
+  if (value == null || !Number.isFinite(Number(value))) return "—";
+  const n = Math.round(Number(value));
+  return (n > 0 ? "+" : "") + n + "%";
 }
 
 function depositGap(deposit, bank) {
@@ -2226,7 +2226,7 @@ function renderHistory() {
       });
       bankSum = Math.round(bankSum * 100) / 100;
       diffSum = Math.round(diffSum * 100) / 100;
-      percentSum = Math.round(percentSum * 1000) / 1000;
+      percentSum = Math.round(percentSum);
       bankNode.textContent = any ? money(bankSum) : "—";
       diffNode.textContent = any ? percentText(percentSum) + " · " + money(diffSum) : "—";
       diffNode.className = any && diffSum > 0 ? "down" : "";
