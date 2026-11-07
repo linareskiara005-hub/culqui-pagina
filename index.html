@@ -849,16 +849,23 @@ function diffPercent(total, bank) {
   return Math.round(((got / sold) - 1) * 10000) / 100;
 }
 
+function percentText(value) {
+  const n = Math.round(Number(value) * 100) / 100;
+  const digits = Math.abs(n).toFixed(2);
+  if (n > 0) return "+" + digits + "%";
+  if (n < 0) return "-" + digits + "%";
+  return "0.00%";
+}
+
 function bankView(sold, deposit, bank) {
   const raw = diffPercent(sold, bank);
   if (raw == null) return null;
   const net = Math.round(Number(deposit) * 100);
   const got = Math.round(Number(bank) * 100);
-  const digits = Math.abs(raw).toFixed(2);
-  const gap = (got - net) / 100;
-  if (got === net) return {percent:digits + "%", tone:"", gap:0};
-  if (got < net) return {percent:"-" + digits + "%", tone:"down", gap};
-  return {percent:"+" + digits + "%", tone:"up", gap};
+  const gap = got === net ? 0 : (got - net) / 100;
+  const tone = got < net ? "down" : got > net ? "up" : "";
+  const percent = got === net ? Math.abs(raw).toFixed(2) + "%" : percentText(raw);
+  return {percent, tone, gap};
 }
 
 function gapText(gap) {
