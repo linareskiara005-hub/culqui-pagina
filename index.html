@@ -374,6 +374,8 @@ body.dark .stat:nth-child(3) strong {color:#d2c0ff}
 body.dark .stats-5 .stat:nth-child(3) strong {color:#9ec5ff}
 body.dark .stats-5 .stat:nth-child(4) strong {color:#8ee0bf}
 body.dark .stats-5 .stat:nth-child(5) strong {color:#ffb3bc}
+body.dark .stats-5 .stat:nth-child(5) strong.up {color:#7ddecb}
+body.dark .stats-5 .stat:nth-child(5) strong.down {color:#ff9aa6}
 body.dark .stats-day .stat:nth-child(6) strong {color:#ffd56a}
 body.dark .history-day {background:#221c36;border-color:#43386a}
 body.dark .history-day h3 {color:#d7c8ff}
@@ -407,6 +409,8 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 .ref-diff {flex-basis:100%;font-size:18px;font-weight:800}
 .ref-diff.down {color:#d94c5b}
 .ref-diff.up {color:#087f78}
+.stats-5 .stat:nth-child(5) strong.up {color:#087f78}
+.stats-5 .stat:nth-child(5) strong.down {color:#d94c5b}
 .history-item {padding:0}
 .history-item > summary {
   cursor:pointer;list-style:none;padding:16px;
@@ -842,13 +846,16 @@ function diffPercent(total, bank) {
   const sold = Number(total);
   const got = Number(bank);
   if (!sold || !Number.isFinite(got)) return null;
-  return Math.round(((got / sold) - 1) * 100);
+  return Math.round(((got / sold) - 1) * 10000) / 100;
 }
 
 function percentText(value) {
   if (value == null || !Number.isFinite(Number(value))) return "—";
-  const n = Math.round(Number(value));
-  return (n > 0 ? "+" : "") + n + "%";
+  const n = Math.round(Number(value) * 100) / 100;
+  const digits = Math.abs(n).toFixed(2);
+  if (n > 0) return "+" + digits + "%";
+  if (n < 0) return "-" + digits + "%";
+  return "0.00%";
 }
 
 function depositGap(deposit, bank) {
@@ -2211,8 +2218,8 @@ function renderHistory() {
 
     function paintDay() {
       let bankSum = 0;
+      let soldSum = 0;
       let diffSum = 0;
-      let percentSum = 0;
       let any = false;
       groups.forEach(group => {
         const value = receivedValue(block.banks[groupKey(group.client, group.reference)]);
@@ -2220,16 +2227,16 @@ function renderHistory() {
         any = true;
         bankSum += value;
         const gt = totals(group.sales);
+        soldSum += Number(gt.sales);
         diffSum += Math.abs(Number(gt.net) - value);
-        const pct = diffPercent(gt.sales, value);
-        if (pct != null) percentSum += pct;
       });
       bankSum = Math.round(bankSum * 100) / 100;
+      soldSum = Math.round(soldSum * 100) / 100;
       diffSum = Math.round(diffSum * 100) / 100;
-      percentSum = Math.round(percentSum);
+      const pct = diffPercent(soldSum, bankSum);
       bankNode.textContent = any ? money(bankSum) : "—";
-      diffNode.textContent = any ? percentText(percentSum) + " · " + money(diffSum) : "—";
-      diffNode.className = any && diffSum > 0 ? "down" : "";
+      diffNode.textContent = any ? percentText(pct) + " · " + money(diffSum) : "—";
+      diffNode.className = pct > 0 ? "up" : pct < 0 ? "down" : "";
     }
 
     groups.forEach((group, index) => {
@@ -2300,7 +2307,7 @@ function renderHistory() {
         const gap = depositGap(gt.net, savedBank);
         const percent = diffPercent(gt.sales, savedBank);
         diff.textContent = "Diferencia " + money(gap) + " · " + percentText(percent);
-        diff.className = "ref-diff " + (gap > 0 ? "down" : gap < 0 ? "up" : "");
+        diff.className = "ref-diff " + (percent > 0 ? "up" : percent < 0 ? "down" : "");
         bankRow.append(fixed, remove, diff);
       };
       drawBank();
