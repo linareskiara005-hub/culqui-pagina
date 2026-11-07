@@ -344,6 +344,8 @@ details[open] > .group-head:after {content:"−"}
   margin-top:12px;
 }
 .total-box strong {color:var(--accent)}
+.history-head {display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.history-head .panel-title {margin:0}
 .history-day {
   margin:0 0 16px;padding:14px;border-radius:16px;
   background:linear-gradient(180deg,#f7f3ff,#fff 70px);
@@ -646,7 +648,10 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <!-- HISTORIAL -->
     <section id="historyPage" class="hidden section-purple">
       <div class="panel">
-        <h2 class="panel-title">Historial por día</h2>
+        <div class="history-head">
+          <h2 class="panel-title">Historial por día</h2>
+          <button type="button" class="btn gray small" id="clearMonthButton">Borrar historial del mes</button>
+        </div>
         <div id="historyList"></div>
       </div>
     </section>
@@ -897,6 +902,11 @@ function loadData() {
 }
 
 let data = {current:{id:0,openedAt:"",sales:[]},history:[]};
+
+function closeMonth(close) {
+  const key = close && (close.day || dayKey(close.closedAt || close.openedAt));
+  return String(key || "").slice(0, 7);
+}
 
 function dayKey(value) {
   const d = new Date(value);
@@ -2368,6 +2378,25 @@ function render() {
   renderBreakdown(sales,$("closingBreakdown"));
   renderHistory();
 }
+
+$("clearMonthButton").addEventListener("click",() => {
+  const month = dayKey(Date.now()).slice(0, 7);
+  const doomed = (data.history || []).filter(close => closeMonth(close) === month);
+  const label = new Date().toLocaleDateString("es-PE",{month:"long",year:"numeric"});
+  const pretty = label.charAt(0).toUpperCase() + label.slice(1);
+  if (!doomed.length) {
+    alert("Este mes no tiene historial para borrar.");
+    return;
+  }
+  if (!confirm("¿Borrar el historial de " + pretty + "? Se eliminan " + doomed.length + " días. La caja de hoy se conserva.")) return;
+  doomed.forEach(close => {
+    (close.sales || []).forEach(sale => rememberDelete(sale.id));
+    rememberDelete(close.id);
+  });
+  data.history = data.history.filter(close => closeMonth(close) !== month);
+  saveData();
+  render();
+});
 
 $("clearTodayButton").addEventListener("click",() => {
   if (!(data.current.sales || []).length) {
