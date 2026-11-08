@@ -101,17 +101,19 @@ button {cursor:pointer}
 main {max-width:1080px;margin:12px auto;padding:0 14px 20px}
 .topbar {
   display:flex;justify-content:space-between;align-items:center;
-  flex-wrap:wrap;gap:8px;margin-bottom:10px;
+  flex-wrap:nowrap;gap:8px;margin-bottom:10px;
+  width:100%;min-width:0;overflow-x:auto;
 }
-.tabs {display:flex;gap:9px;flex-wrap:wrap}
+.tabs {display:flex;gap:8px;flex-wrap:nowrap;flex:0 1 auto}
 .tab {
   border:1px solid var(--line);
   background:var(--card);
   color:var(--muted);
-  padding:16px 26px;
+  padding:10px 14px;
   border-radius:14px;
   font-weight:800;
-  font-size:28px;
+  font-size:20px;
+  white-space:nowrap;
   box-shadow:0 3px 12px rgba(20,40,70,.03);
   transition:.2s;
 }
@@ -125,7 +127,8 @@ main {max-width:1080px;margin:12px auto;padding:0 14px 20px}
 .tab.purple {color:#6d4cc4;border-color:#ddd0fa}
 .tab.orange.active {background:var(--orange);border-color:var(--orange);color:white}
 .tab.purple.active {background:var(--purple);border-color:var(--purple);color:white}
-.tools {display:flex;gap:8px}
+.tools {display:flex;gap:6px;flex-wrap:nowrap;align-items:center;flex:0 0 auto}
+.tools .btn.small {white-space:nowrap;padding:8px 10px;font-size:15px}
 .btn {
   border:0;border-radius:12px;padding:12px 17px;
   background:var(--accent);color:white;font-weight:700;
@@ -465,16 +468,19 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 .password-wrap input {padding-right:75px}
 .login-error {font-size:17px;color:#e05b68}
 .footer-note {text-align:center;color:var(--muted);font-size:16px;margin-top:8px}
+.sync-line {display:flex;gap:8px;align-items:center;min-height:0;margin-bottom:4px}
 .sync-status {font-size:15px;font-weight:700;color:var(--muted);align-self:center}
 
 @media(max-width:650px) {
   main {padding:0 12px 16px;margin-top:10px}
   .hero {padding:12px 12px 14px}
   .logo {font-size:30px}
-  .topbar {align-items:stretch}
-  .tabs {display:grid;grid-template-columns:repeat(3,1fr);width:100%;gap:6px}
-  .tab {padding:16px 6px;font-size:22px}
-  .tools {justify-content:flex-end}
+  .topbar {align-items:center;flex-wrap:nowrap}
+  .tabs {display:flex;width:auto;gap:6px}
+  .tab {padding:10px 8px;font-size:16px}
+  .tools {justify-content:flex-end;flex-wrap:nowrap}
+  .tools .btn.small {font-size:13px;padding:8px 8px}
+  .sync-status {font-size:12px}
   .panel {padding:16px;border-radius:17px}
   .stats,.stats-4,.day-sums {gap:8px}
   .stats-4,.stats-5,.stats-day,.day-sums {grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -530,6 +536,10 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
   </header>
 
   <main>
+    <div class="sync-line">
+      <span id="accountLabel" class="sync-status"></span>
+      <span id="syncStatus" class="sync-status"></span>
+    </div>
     <div class="topbar">
       <nav class="tabs">
         <button class="tab active" data-page="register">✦ Ventas</button>
@@ -537,8 +547,6 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
         <button class="tab purple" data-page="history">◷ Historial</button>
       </nav>
       <div class="tools">
-        <span id="accountLabel" class="sync-status"></span>
-        <span id="syncStatus" class="sync-status"></span>
         <button class="btn gray small" id="logoutButton" type="button">Salir</button>
         <button class="btn gray small" id="themeButton">☾ Oscuro</button>
         <button type="button" class="btn gray small" id="clearHistoryButton">BORRAR HISTORIAL</button>
