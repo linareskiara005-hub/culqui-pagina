@@ -288,6 +288,9 @@ input:focus,select:focus {
 .choice-row .btn {width:100%}
 .wipe-list {display:grid;gap:8px;margin:12px 0 14px}
 .wipe-list .btn {width:100%}
+.wipe-day {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 14px;padding-top:12px;border-top:1px solid var(--line)}
+.wipe-day input {flex:1;min-width:160px;max-width:none}
+.wipe-day .btn {flex:1 1 100%}
 .history-find {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .history-find input {max-width:220px}
 .modal {
@@ -680,6 +683,12 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
       <button type="button" class="btn gray" data-back="6">Una semana</button>
       <button type="button" class="btn gray" data-back="29">Un mes</button>
       <button type="button" class="btn gray" data-back="364">Un año</button>
+    </div>
+    <p class="subtitle">O elige un solo día. Puede ser hoy, ayer u otra fecha.</p>
+    <div class="wipe-day">
+      <label for="clearDay">DÍA</label>
+      <input id="clearDay" type="date">
+      <button type="button" class="btn gray small" id="clearDayButton">Borrar este día</button>
     </div>
     <button type="button" class="btn gray" id="clearCancel">Cancelar</button>
   </div>
@@ -2446,6 +2455,10 @@ function render() {
 }
 
 $("clearHistoryButton").addEventListener("click",() => {
+  const field = $("clearDay");
+  const today = inputDateValue(new Date());
+  field.max = today;
+  if (!field.value || field.value > today) field.value = today;
   $("clearModal").classList.remove("hidden");
 });
 
@@ -2479,6 +2492,43 @@ $("clearModal").querySelector(".wipe-list").addEventListener("click", event => {
   render();
   $("clearModal").classList.add("hidden");
 });
+
+function wipeChosenDay() {
+  const key = $("clearDay").value;
+  if (!key) {
+    alert("Elige el día que quieres borrar.");
+    return;
+  }
+  const today = inputDateValue(new Date());
+  if (key > today) {
+    alert("Ese día todavía no existe.");
+    return;
+  }
+  const doomed = (data.history || []).filter(close => closeDay(close) === key);
+  const currentSales = key === today ? (data.current.sales || []) : [];
+  if (!doomed.length && !currentSales.length) {
+    alert("El " + prettyDay(key) + " no tiene movimientos.");
+    return;
+  }
+  const label = key === today ? "hoy" : key === daysAgoKey(1) ? "ayer" : prettyDay(key);
+  if (!confirm("¿Borrar " + label + " (" + prettyDay(key) + ")? Ese día desaparece. La caja de los otros días se conserva.")) return;
+  doomed.forEach(close => {
+    (close.sales || []).forEach(sale => rememberDelete(sale.id));
+    rememberDelete(close.id);
+  });
+  const gone = new Set(doomed.map(close => close.id));
+  data.history = data.history.filter(close => !gone.has(close.id));
+  if (key === today) {
+    currentSales.forEach(sale => rememberDelete(sale.id));
+    data.current.sales = [];
+    data.current.banks = {};
+  }
+  saveData();
+  render();
+  $("clearModal").classList.add("hidden");
+}
+
+$("clearDayButton").addEventListener("click", wipeChosenDay);
 
 $("historyDate").addEventListener("change",() => renderHistory());
 $("historyDateAll").addEventListener("click",() => {
