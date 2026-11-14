@@ -357,6 +357,20 @@ input:focus,select:focus {
 .clear-cal-grid button.empty {visibility:hidden}
 .history-find {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .history-find input {max-width:220px}
+.cash-table {width:100%;border-collapse:collapse;font-size:18px;min-width:920px}
+.cash-table th {font-size:15px}
+.cash-group td {background:#f6f1ff;font-weight:800}
+.cash-ref td {background:var(--card2);font-weight:700}
+.cash-sale td {font-size:16px}
+.day-toggle {border:0;background:transparent;color:inherit;font:inherit;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;text-align:left}
+.cash-actions {display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.cash-badge {display:inline-block;margin-left:8px;font-size:13px;font-weight:800;border-radius:999px;padding:3px 8px;background:#efe7ff;color:#5b3cb5;vertical-align:middle}
+.cash-badge.live {background:#e5f8f4;color:#087f78}
+.cash-bank {display:flex;gap:6px;align-items:center}
+.cash-bank input {min-width:120px;padding:8px 10px;font-size:16px}
+body.dark .cash-group td {background:#2a2344}
+body.dark .cash-badge {background:#3a2d62;color:#d7c8ff}
+body.dark .cash-badge.live {background:#14352f;color:#7ddecb}
 .modal {
   position:fixed;inset:0;z-index:40;
   background:rgba(16,36,58,.48);
@@ -729,7 +743,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
           <input id="observations" placeholder="Escribe alguna observación">
         </div>
         <button class="btn orange" id="closeButton">▣ CERRAR CAJA Y ABRIR OTRA</button>
-        <p class="subtitle" style="margin:14px 0 0">Al cerrar, se guarda el detalle completo y comienza una nueva caja vacía.</p>
+        <p class="subtitle" style="margin:14px 0 0">Si no la cierras, a las 4:00 a. m. se cierra sola, pasa al historial y el día nuevo empieza en S/ 0.00. En Historial puedes editar o eliminar esa caja y las de días anteriores.</p>
       </div>
     </section>
 
@@ -737,6 +751,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <section id="historyPage" class="hidden section-purple">
       <div class="panel">
         <h2 class="panel-title">Historial por día</h2>
+        <p class="subtitle">Cada día es un grupo. La flecha abre las ventas. A las 4:00 a. m. la caja abierta se cierra sola. Puedes ver el detalle, editar la fecha o eliminar el día.</p>
         <div class="history-find">
           <label for="historyDate">FECHA</label>
           <input id="historyDate" type="date">
@@ -755,6 +770,27 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <h2 class="panel-title" id="dayTitle">Detalle</h2>
     <div id="dayDetail"></div>
     <button type="button" class="btn gray" id="dayClose">Cerrar</button>
+  </div>
+</div>
+
+<div id="cashEditModal" class="modal hidden">
+  <div class="modal-card">
+    <h2 class="panel-title">Editar caja</h2>
+    <p class="subtitle" id="cashEditHint">Corrige la fecha o la observación. Las ventas de ese día se mueven con la caja.</p>
+    <form id="cashEditForm">
+      <div class="field">
+        <label>FECHA</label>
+        <input id="cashEditDate" type="date" required>
+      </div>
+      <div class="field">
+        <label>OBSERVACIONES</label>
+        <input id="cashEditNote" placeholder="Observación del cierre">
+      </div>
+      <div class="rate-actions">
+        <button class="btn" type="submit">Guardar</button>
+        <button class="btn gray" type="button" id="cashEditCancel">Cancelar</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1048,9 +1084,24 @@ function dayKey(value) {
   return d.getFullYear() + "-" + month + "-" + day;
 }
 
+function businessDay(value) {
+  const d = new Date(value == null ? Date.now() : value);
+  if (Number.isNaN(d.getTime())) return dayKey(Date.now());
+  if (d.getHours() < 4) d.setDate(d.getDate() - 1);
+  return dayKey(d);
+}
+
+function shiftDayKey(key, days) {
+  const parts = String(key || "").split("-").map(Number);
+  if (parts.length !== 3 || parts.some(part => !part)) return key;
+  const date = new Date(parts[0], parts[1] - 1, parts[2]);
+  date.setDate(date.getDate() + days);
+  return inputDateValue(date);
+}
+
 function dayTitle(key) {
-  const today = dayKey(Date.now());
-  const yesterday = dayKey(Date.now() - 86400000);
+  const today = businessDay(Date.now());
+  const yesterday = shiftDayKey(today, -1);
   const parts = key.split("-").map(Number);
   const date = new Date(parts[0], parts[1] - 1, parts[2]);
   const text = date.toLocaleDateString("es-PE",{
@@ -1063,21 +1114,22 @@ function dayTitle(key) {
 }
 
 function archivePastDays() {
-  const today = dayKey(Date.now());
+  const today = businessDay(Date.now());
   const sales = data.current.sales || [];
-  const past = sales.filter(sale => dayKey(sale.time || data.current.openedAt) !== today);
-  const todaySales = sales.filter(sale => dayKey(sale.time || data.current.openedAt) === today);
+  const past = sales.filter(sale => businessDay(sale.time || data.current.openedAt) !== today);
+  const todaySales = sales.filter(sale => businessDay(sale.time || data.current.openedAt) === today);
   if (!past.length) {
-    if (dayKey(data.current.openedAt) !== today && !todaySales.length) {
+    if (businessDay(data.current.openedAt) !== today && !todaySales.length) {
       data.current.openedAt = now();
       saveData();
+      return true;
     }
-    return;
+    return false;
   }
 
   const byDay = {};
   past.forEach(sale => {
-    const key = dayKey(sale.time || data.current.openedAt);
+    const key = businessDay(sale.time || data.current.openedAt);
     if (!byDay[key]) byDay[key] = [];
     byDay[key].push(sale);
   });
@@ -1088,10 +1140,11 @@ function archivePastDays() {
       id:Date.now() + Math.floor(Math.random() * 1000),
       openedAt:daySales[0].time,
       closedAt:daySales[daySales.length - 1].time,
-      observations:"Cierre automático del día",
+      observations:"Cierre automático a las 4:00 a. m.",
       sales:daySales,
       totals:totals(daySales),
       day:key,
+      auto:true,
       banks:takeBanks(daySales)
     });
   });
@@ -1099,6 +1152,7 @@ function archivePastDays() {
   data.current.sales = todaySales;
   if (!todaySales.length) data.current = emptyCash();
   saveData();
+  return true;
 }
 
 function inputDateValue(date) {
@@ -2302,223 +2356,370 @@ function receivedValue(value) {
   return Number(value);
 }
 
+function historyGroups() {
+  const map = new Map();
+  const slot = day => {
+    if (!map.has(day)) map.set(day, {day, sales:[], banks:{}, closes:[], live:false, notes:[], auto:false});
+    return map.get(day);
+  };
+  (data.history || []).forEach(close => {
+    const day = closeDay(close);
+    if (!day) return;
+    const group = slot(day);
+    close.banks = close.banks || {};
+    group.sales.push(...(close.sales || []));
+    Object.assign(group.banks, close.banks);
+    group.closes.push(close);
+    if (close.observations) group.notes.push(close.observations);
+    if (close.auto) group.auto = true;
+  });
+  const liveDay = businessDay(Date.now());
+  const openSales = data.current.sales || [];
+  if (openSales.length) {
+    const group = slot(liveDay);
+    data.current.banks = data.current.banks || {};
+    group.sales.push(...openSales);
+    Object.assign(group.banks, data.current.banks);
+    group.live = true;
+  }
+  return [...map.values()].sort((a, b) => String(b.day).localeCompare(String(a.day)));
+}
+
+function putBank(group, key, value) {
+  const bags = [];
+  if (group.live) bags.push(data.current.banks = data.current.banks || {});
+  (group.closes || []).forEach(close => bags.push(close.banks = close.banks || {}));
+  if (!bags.length) return;
+  bags.forEach((bag, index) => {
+    if (value == null) delete bag[key];
+    else if (index === 0) bag[key] = value;
+    else delete bag[key];
+  });
+  saveData();
+  render();
+}
+
+function dayDetailBody(group) {
+  const body = document.createElement("div");
+  body.className = "history-details";
+  const when = document.createElement("p");
+  when.className = "subtitle";
+  when.textContent = group.live
+    ? "Caja abierta. A las 4:00 a. m. se cierra sola y el día nuevo empieza en cero."
+    : "Cierre del " + prettyDay(group.day);
+  body.appendChild(when);
+  if (group.notes.length) {
+    const note = document.createElement("p");
+    note.className = "subtitle";
+    note.textContent = "Observación: " + group.notes.join(" · ");
+    body.appendChild(note);
+  }
+  const heading = document.createElement("h3");
+  heading.textContent = "Totales por cliente y referencia";
+  heading.style.fontSize = "20px";
+  body.appendChild(heading);
+  const breakdown = document.createElement("div");
+  body.appendChild(breakdown);
+  renderBreakdown(group.sales, breakdown);
+  const saleHeading = document.createElement("h3");
+  saleHeading.textContent = "Detalle de ventas";
+  saleHeading.style.fontSize = "20px";
+  saleHeading.style.marginTop = "18px";
+  body.appendChild(saleHeading);
+  const salesContainer = document.createElement("div");
+  renderSales(group.sales, salesContainer);
+  body.appendChild(salesContainer);
+  return body;
+}
+
+function deleteCashDay(key) {
+  const liveDay = businessDay(Date.now());
+  const label = key === liveDay ? "hoy" : prettyDay(key);
+  if (!confirm("¿Eliminar la caja del " + label + " (" + prettyDay(key) + ")? Esas ventas desaparecen.")) return;
+  (data.history || []).filter(close => closeDay(close) === key).forEach(close => {
+    (close.sales || []).forEach(sale => rememberDelete(sale.id));
+    rememberDelete(close.id);
+  });
+  data.history = (data.history || []).filter(close => closeDay(close) !== key);
+  if (key === liveDay) {
+    (data.current.sales || []).forEach(sale => rememberDelete(sale.id));
+    data.current.sales = [];
+    data.current.banks = {};
+  }
+  openHistoryDays.delete(key);
+  saveData();
+  render();
+}
+
+let editingCashDay = "";
+
+function stampOnDay(iso, key) {
+  const clock = new Date(iso || Date.now());
+  const parts = String(key).split("-").map(Number);
+  const date = new Date(parts[0], parts[1] - 1, parts[2], clock.getHours(), clock.getMinutes(), clock.getSeconds(), 0);
+  return Number.isNaN(date.getTime()) ? now() : date.toISOString();
+}
+
+function openCashEdit(key) {
+  editingCashDay = key;
+  const group = historyGroups().find(item => item.day === key);
+  $("cashEditDate").max = inputDateValue(new Date());
+  $("cashEditDate").value = key;
+  $("cashEditNote").value = group && group.notes.length ? group.notes[0] : "";
+  $("cashEditHint").textContent = group && group.live
+    ? "Esta caja sigue abierta. Si cambias la fecha, sus ventas pasan al historial de ese día."
+    : "Corrige la fecha o la observación. Las ventas de ese día se mueven con la caja.";
+  $("cashEditModal").classList.remove("hidden");
+}
+
+function closeCashEdit() {
+  $("cashEditModal").classList.add("hidden");
+  editingCashDay = "";
+}
+
+function saveCashEdit(event) {
+  event.preventDefault();
+  const from = editingCashDay;
+  const to = $("cashEditDate").value;
+  const note = $("cashEditNote").value.trim();
+  if (!from || !to || to > inputDateValue(new Date())) {
+    alert("Elige una fecha válida.");
+    return;
+  }
+  const liveDay = businessDay(Date.now());
+  const closes = (data.history || []).filter(close => closeDay(close) === from);
+  const liveSales = liveDay === from ? (data.current.sales || []).slice() : [];
+  const liveBanks = liveDay === from ? Object.assign({}, data.current.banks || {}) : {};
+  if (to === from) {
+    closes.forEach(close => { close.observations = note; close.day = from; });
+    if (liveDay === from) $("observations").value = note;
+    saveData();
+    closeCashEdit();
+    render();
+    return;
+  }
+  const banks = {};
+  closes.forEach(close => Object.assign(banks, close.banks || {}));
+  Object.assign(banks, liveBanks);
+  const sales = [];
+  closes.forEach(close => sales.push(...(close.sales || [])));
+  sales.push(...liveSales);
+  sales.forEach(sale => { sale.time = stampOnDay(sale.time, to); });
+  closes.forEach(close => rememberDelete(close.id));
+  data.history = (data.history || []).filter(close => closeDay(close) !== from);
+  if (liveDay === from) {
+    data.current.sales = [];
+    data.current.banks = {};
+  }
+  if (to === liveDay) {
+    data.current.sales = (data.current.sales || []).concat(sales);
+    data.current.banks = Object.assign({}, data.current.banks || {}, banks);
+    $("observations").value = note;
+  } else {
+    const host = (data.history || []).find(close => closeDay(close) === to);
+    if (host) {
+      host.sales = (host.sales || []).concat(sales);
+      host.totals = totals(host.sales);
+      host.banks = Object.assign(host.banks || {}, banks);
+      host.observations = note || host.observations || "";
+      host.day = to;
+    } else {
+      data.history.unshift({
+        id:Date.now() + Math.floor(Math.random() * 1000),
+        openedAt:sales[0] ? sales[0].time : stampOnDay(now(), to),
+        closedAt:sales.length ? sales[sales.length - 1].time : stampOnDay(now(), to),
+        observations:note,
+        sales,
+        totals:totals(sales),
+        day:to,
+        banks
+      });
+    }
+  }
+  openHistoryDays.delete(from);
+  openHistoryDays.add(to);
+  saveData();
+  closeCashEdit();
+  render();
+}
+
+const openHistoryDays = new Set();
+
 function renderHistory() {
   const target = $("historyList");
   target.innerHTML = "";
-  const blocks = [];
-  (data.history || []).forEach(close => {
-    const sales = close.sales || [];
-    const day = closeDay(close);
-    close.banks = close.banks || {};
-    blocks.push({
-      day,
-      title:dayTitle(day),
-      when:dateTime(close.closedAt || close.openedAt),
-      sales,
-      totals:totals(sales),
-      observations:close.observations || "",
-      where:"history",
-      id:close.id,
-      banks:close.banks
-    });
-  });
-
-  const openSales = data.current.sales || [];
-  if (openSales.length) {
-    const day = dayKey(Date.now());
-    data.current.banks = data.current.banks || {};
-    blocks.unshift({
-      day,
-      title:dayTitle(day),
-      when:"Caja de hoy, todavía abierta",
-      sales:openSales,
-      totals:totals(openSales),
-      observations:"",
-      where:"current",
-      id:"current",
-      banks:data.current.banks
-    });
-  }
-
   const wanted = $("historyDate").value;
-  const shown = wanted ? blocks.filter(block => block.day === wanted) : blocks;
-
-  if (!shown.length) {
+  const groups = historyGroups().filter(group => !wanted || group.day === wanted);
+  if (!groups.length) {
     target.innerHTML = wanted
       ? '<div class="empty">Ese día no tiene movimientos.</div>'
       : '<div class="empty">Todavía no hay cierres.</div>';
     return;
   }
 
-  shown.forEach(block => {
-    const t = block.totals;
-    const day = document.createElement("article");
-    day.className = "history-day";
-    const head = document.createElement("div");
-    head.className = "history-head";
-    const headingDay = document.createElement("h3");
-    headingDay.textContent = prettyDay(block.day) + " · " + block.title;
-    const detailBtn = document.createElement("button");
-    detailBtn.type = "button";
-    detailBtn.className = "btn small history-detail";
-    detailBtn.textContent = "DETALLE";
-    head.append(headingDay, detailBtn);
-    day.appendChild(head);
-
-    const groups = groupSales(block.sales).sort((a, b) => {
+  const wrap = document.createElement("div");
+  wrap.className = "table-wrap";
+  const table = document.createElement("table");
+  table.className = "cash-table";
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Día</th>
+        <th>Ventas</th>
+        <th>Comisión</th>
+        <th>Depósito</th>
+        <th>Banco</th>
+        <th>Diferencia</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+  `;
+  groups.forEach(group => {
+    const body = document.createElement("tbody");
+    const t = totals(group.sales);
+    const open = openHistoryDays.has(group.day);
+    const groupsOf = groupSales(group.sales).sort((a, b) => {
       const left = POS_ORDER.indexOf(a.reference);
       const right = POS_ORDER.indexOf(b.reference);
       return (left < 0 ? 99 : left) - (right < 0 ? 99 : right);
     });
-    const bankNode = document.createElement("strong");
-    const diffNode = document.createElement("strong");
-    const sums = document.createElement("div");
-    sums.className = "stats stats-5";
-    sums.innerHTML = `
-      <div class="stat"><span>TOTAL VENDIDO</span><strong>${money(t.sales)}</strong></div>
-      <div class="stat"><span>COMISIONES</span><strong>${money(t.commission)}</strong></div>
-      <div class="stat"><span>DEPÓSITO</span><strong>${money(t.net)}</strong></div>
-      <div class="stat"><span>BANCO</span></div>
-      <div class="stat"><span>DIFERENCIA</span></div>
+    let bankSum = 0;
+    let soldSum = 0;
+    let depositSum = 0;
+    let anyBank = false;
+    groupsOf.forEach(item => {
+      const value = receivedValue(group.banks[groupKey(item.client, item.reference)]);
+      if (value == null) return;
+      anyBank = true;
+      bankSum += value;
+      const gt = totals(item.sales);
+      soldSum += Number(gt.sales);
+      depositSum += Number(gt.net);
+    });
+    const view = anyBank ? bankView(soldSum, depositSum, bankSum) : null;
+    const row = document.createElement("tr");
+    row.className = "cash-group";
+    const badge = group.live
+      ? '<span class="cash-badge live">ABIERTA</span>'
+      : (group.auto ? '<span class="cash-badge">4:00 A. M.</span>' : '<span class="cash-badge">CERRADA</span>');
+    row.innerHTML = `
+      <td></td>
+      <td>${group.sales.length} · ${money(t.sales)}</td>
+      <td>${money(t.commission)}</td>
+      <td>${money(t.net)}</td>
+      <td>${anyBank ? money(bankSum) : "—"}</td>
+      <td class="${view ? view.tone : ""}">${view ? view.percent + " · " + gapText(view.gap) : "—"}</td>
+      <td></td>
     `;
-    sums.children[3].appendChild(bankNode);
-    sums.children[4].appendChild(diffNode);
-    day.appendChild(sums);
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "day-toggle";
+    toggle.innerHTML = `<span>${open ? "▼" : "▶"}</span><span>${escapeHtml(prettyDay(group.day) + " · " + dayTitle(group.day))}</span>${badge}`;
+    toggle.addEventListener("click", () => {
+      if (openHistoryDays.has(group.day)) openHistoryDays.delete(group.day);
+      else openHistoryDays.add(group.day);
+      renderHistory();
+    });
+    row.children[0].appendChild(toggle);
+    const actions = document.createElement("div");
+    actions.className = "cash-actions";
+    const detail = document.createElement("button");
+    detail.type = "button";
+    detail.className = "btn small history-detail";
+    detail.textContent = "DETALLE";
+    detail.addEventListener("click", () => openDayDetail(prettyDay(group.day) + " · " + dayTitle(group.day), dayDetailBody(group)));
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "icon-btn";
+    edit.textContent = "✎";
+    edit.title = "Editar esta caja";
+    edit.addEventListener("click", () => openCashEdit(group.day));
+    actions.append(detail, edit, trashButton("Eliminar esta caja", () => deleteCashDay(group.day)));
+    row.children[6].appendChild(actions);
+    body.appendChild(row);
 
-    function paintDay() {
-      let bankSum = 0;
-      let soldSum = 0;
-      let depositSum = 0;
-      let any = false;
-      groups.forEach(group => {
-        const value = receivedValue(block.banks[groupKey(group.client, group.reference)]);
-        if (value == null) return;
-        any = true;
-        bankSum += value;
-        const gt = totals(group.sales);
-        soldSum += Number(gt.sales);
-        depositSum += Number(gt.net);
-      });
-      bankSum = Math.round(bankSum * 100) / 100;
-      soldSum = Math.round(soldSum * 100) / 100;
-      depositSum = Math.round(depositSum * 100) / 100;
-      const view = bankView(soldSum, depositSum, bankSum);
-      bankNode.textContent = any ? money(bankSum) : "—";
-      diffNode.textContent = any && view ? view.percent + " · " + gapText(view.gap) : "—";
-      diffNode.className = view ? view.tone : "";
-    }
-
-    groups.forEach((group, index) => {
-      const key = groupKey(group.client, group.reference);
-      const gt = totals(group.sales);
-      const account = accountOf(group.sales[0]);
-      const card = document.createElement("div");
-      card.className = "ref-card tone-" + (index % 5);
-      card.innerHTML = `
-        <div class="ref-card-top">
-          <strong>${escapeHtml(group.client)} · ${escapeHtml(refLabel(group.reference))}</strong>
-          <span>Cuenta ${escapeHtml(account.account)} · CTA ${escapeHtml(account.cta)}</span>
-        </div>
-        <div class="ref-metrics">
-          <div><span>VENDIDO</span><b>${money(gt.sales)}</b></div>
-          <div><span>COMISIÓN</span><b>${money(gt.commission)}</b></div>
-          <div><span>DEPÓSITO</span><b>${money(gt.net)}</b></div>
-        </div>
-      `;
-      const bankRow = document.createElement("div");
-      bankRow.className = "ref-bank";
-      const diff = document.createElement("div");
-      diff.className = "ref-diff";
-      const drawBank = () => {
-        bankRow.innerHTML = "";
-        const savedBank = receivedValue(block.banks[key]);
-        if (savedBank == null) {
-          const label = document.createElement("label");
-          label.textContent = "BANCO";
+    if (open) {
+      groupsOf.forEach(item => {
+        const key = groupKey(item.client, item.reference);
+        const gt = totals(item.sales);
+        const saved = receivedValue(group.banks[key]);
+        const refView = saved == null ? null : bankView(gt.sales, gt.net, saved);
+        const refRow = document.createElement("tr");
+        refRow.className = "cash-ref";
+        refRow.innerHTML = `
+          <td>↳ ${escapeHtml(item.client)} · ${escapeHtml(refLabel(item.reference))}</td>
+          <td>${money(gt.sales)}</td>
+          <td>${money(gt.commission)}</td>
+          <td>${money(gt.net)}</td>
+          <td></td>
+          <td class="${refView ? refView.tone : ""}">${refView ? refView.percent + " · " + gapText(refView.gap) : "—"}</td>
+          <td></td>
+        `;
+        const bankCell = document.createElement("div");
+        bankCell.className = "cash-bank";
+        if (saved == null) {
           const input = document.createElement("input");
           input.type = "number";
           input.min = "0";
           input.step = "0.01";
-          input.inputMode = "decimal";
-          input.placeholder = "Lo que depositó el banco";
+          input.placeholder = "Banco";
           const accept = document.createElement("button");
           accept.type = "button";
           accept.className = "btn small";
-          accept.textContent = "Aceptar";
-          accept.addEventListener("click",() => {
+          accept.textContent = "OK";
+          accept.addEventListener("click", () => {
             const raw = input.value.trim();
             const value = Number(raw);
             if (raw === "" || !Number.isFinite(value) || value < 0) {
               alert("Escribe el monto que ingresó del banco.");
               return;
             }
-            block.banks[key] = Math.round(value * 100) / 100;
-            saveData();
-            drawBank();
-            paintDay();
+            putBank(group, key, Math.round(value * 100) / 100);
           });
-          bankRow.append(label, input, accept);
-          return;
+          bankCell.append(input, accept);
+        } else {
+          const fixed = document.createElement("strong");
+          fixed.textContent = money(saved);
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "btn small danger";
+          remove.textContent = "Borrar";
+          remove.addEventListener("click", () => putBank(group, key, null));
+          bankCell.append(fixed, remove);
         }
-        const fixed = document.createElement("div");
-        fixed.className = "bank-fixed";
-        fixed.innerHTML = `<span>INGRESÓ DEL BANCO</span>${money(savedBank)}`;
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "btn small danger";
-        remove.textContent = "Borrar";
-        remove.addEventListener("click",() => {
-          delete block.banks[key];
-          saveData();
-          drawBank();
-          paintDay();
+        refRow.children[4].appendChild(bankCell);
+        body.appendChild(refRow);
+
+        item.sales.forEach(sale => {
+          const saleRow = document.createElement("tr");
+          saleRow.className = "cash-sale";
+          saleRow.innerHTML = `
+            <td>${escapeHtml(dateTime(sale.time))} · ${escapeHtml(sale.card || "")}</td>
+            <td>${money(sale.amount)}</td>
+            <td>${money(sale.commission)}</td>
+            <td>${money(sale.deposit ?? sale.net)}</td>
+            <td></td>
+            <td></td>
+            <td></td>
+          `;
+          const saleActions = document.createElement("div");
+          saleActions.className = "cash-actions";
+          const fix = document.createElement("button");
+          fix.type = "button";
+          fix.className = "icon-btn";
+          fix.textContent = "✎";
+          fix.title = "Corregir esta venta";
+          fix.addEventListener("click", () => editSale(sale.id));
+          saleActions.append(fix, trashButton("Borrar venta", () => deleteSale(sale.id)));
+          saleRow.children[6].appendChild(saleActions);
+          body.appendChild(saleRow);
         });
-        const view = bankView(gt.sales, gt.net, savedBank);
-        diff.textContent = "Diferencia " + gapText(view.gap) + " · " + view.percent;
-        diff.className = "ref-diff " + view.tone;
-        bankRow.append(fixed, remove, diff);
-      };
-      drawBank();
-      card.appendChild(bankRow);
-      day.appendChild(card);
-    });
-    paintDay();
-
-    const body = document.createElement("div");
-    body.className = "history-details";
-    if (block.when) {
-      const when = document.createElement("p");
-      when.className = "subtitle";
-      when.textContent = block.when;
-      body.appendChild(when);
+      });
     }
-    if (block.observations) {
-      const note = document.createElement("p");
-      note.className = "subtitle";
-      note.textContent = "Observación: " + block.observations;
-      body.appendChild(note);
-    }
-
-    const heading = document.createElement("h3");
-    heading.textContent = "Totales por cliente y referencia";
-    heading.style.fontSize = "20px";
-    body.appendChild(heading);
-    const breakdown = document.createElement("div");
-    body.appendChild(breakdown);
-    renderBreakdown(block.sales,breakdown);
-
-    const saleHeading = document.createElement("h3");
-    saleHeading.textContent = "Detalle de ventas";
-    saleHeading.style.fontSize = "20px";
-    saleHeading.style.marginTop = "18px";
-    body.appendChild(saleHeading);
-
-    const salesContainer = document.createElement("div");
-    renderSales(block.sales,salesContainer);
-    body.appendChild(salesContainer);
-    detailBtn.addEventListener("click",() => openDayDetail(prettyDay(block.day) + " · " + block.title, body));
-    target.appendChild(day);
+    table.appendChild(body);
   });
+  wrap.appendChild(table);
+  target.appendChild(wrap);
 }
 
 function openDayDetail(title, body) {
@@ -2538,8 +2739,26 @@ $("dayClose").addEventListener("click", closeDayDetail);
 $("dayModal").addEventListener("click", event => {
   if (event.target === $("dayModal")) closeDayDetail();
 });
+$("cashEditCancel").addEventListener("click", closeCashEdit);
+$("cashEditForm").addEventListener("submit", saveCashEdit);
+$("cashEditModal").addEventListener("click", event => {
+  if (event.target === $("cashEditModal")) closeCashEdit();
+});
+
+let autoCloseTimer = 0;
+function scheduleAutoClose() {
+  clearTimeout(autoCloseTimer);
+  const next = new Date();
+  next.setHours(4, 0, 0, 0);
+  if (next.getTime() <= Date.now()) next.setDate(next.getDate() + 1);
+  autoCloseTimer = setTimeout(() => {
+    render();
+    scheduleAutoClose();
+  }, Math.max(1000, next.getTime() - Date.now() + 1000));
+}
 
 function render() {
+  archivePastDays();
   const sales = data.current.sales || [];
   const t = totals(sales);
 
@@ -2551,7 +2770,7 @@ function render() {
   $("closeCommission").textContent = money(t.commission);
   $("closeNet").textContent = money(t.net);
 
-  $("cashInfo").textContent = "Hora de apertura de esta caja: " + dateTime(data.current.openedAt);
+  $("cashInfo").textContent = "Caja abierta desde " + dateTime(data.current.openedAt) + ". Si no la cierras, a las 4:00 a. m. pasa al historial y esta caja queda en S/ 0.00.";
 
   renderClientSummary(sales);
   renderBreakdown(sales,$("closingBreakdown"));
@@ -2686,8 +2905,9 @@ function wipeChosenDay() {
     alert("Ese día todavía no existe.");
     return;
   }
+  const liveDay = businessDay(Date.now());
   const doomed = (data.history || []).filter(close => closeDay(close) === key);
-  const currentSales = key === today ? (data.current.sales || []) : [];
+  const currentSales = key === liveDay ? (data.current.sales || []) : [];
   if (!doomed.length && !currentSales.length) {
     alert("El " + prettyDay(key) + " no tiene movimientos.");
     return;
@@ -2700,7 +2920,7 @@ function wipeChosenDay() {
   });
   const gone = new Set(doomed.map(close => close.id));
   data.history = data.history.filter(close => !gone.has(close.id));
-  if (key === today) {
+  if (key === liveDay) {
     currentSales.forEach(sale => rememberDelete(sale.id));
     data.current.sales = [];
     data.current.banks = {};
@@ -2747,7 +2967,8 @@ $("closeButton").addEventListener("click",() => {
     sales:data.current.sales,
     totals:totals(data.current.sales),
     receivedNet:receivedValue(data.current.receivedNet),
-    banks:data.current.banks || {}
+    banks:data.current.banks || {},
+    day:businessDay(closedAt)
   };
 
   data.history.unshift(closed);
@@ -2810,6 +3031,7 @@ function showApp() {
   $("accountLabel").textContent = currentUser;
   applyTheme();
   render();
+  scheduleAutoClose();
   startSync();
 }
 
@@ -2823,6 +3045,7 @@ function enterAccount(user) {
 }
 
 function leaveAccount() {
+  clearTimeout(autoCloseTimer);
   currentUser = "";
   syncReady = false;
   pinnedUser = "";
