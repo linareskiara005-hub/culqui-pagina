@@ -2449,6 +2449,7 @@ function dayDetailBody(group) {
   body.appendChild(saleHeading);
   const salesContainer = document.createElement("div");
   renderSales(group.sales, salesContainer);
+  salesContainer.querySelectorAll("details").forEach(node => { node.open = true; });
   body.appendChild(salesContainer);
   return body;
 }
@@ -2648,14 +2649,8 @@ function renderHistory() {
     detail.type = "button";
     detail.className = "btn small history-detail";
     detail.textContent = "DETALLE";
-    detail.addEventListener("click", () => openDayDetail(prettyDay(group.day) + " · " + dayTitle(group.day), dayDetailBody(group)));
-    const edit = document.createElement("button");
-    edit.type = "button";
-    edit.className = "icon-btn";
-    edit.textContent = "✎";
-    edit.title = "Editar esta caja";
-    edit.addEventListener("click", () => openCashEdit(group.day));
-    actions.append(detail, edit, trashButton("Eliminar esta caja", () => deleteCashDay(group.day)));
+    detail.addEventListener("click", () => openDayDetail(prettyDay(group.day) + " · " + dayTitle(group.day), dayDetailBody(group), group.day));
+    actions.append(detail, trashButton("Eliminar esta caja", () => deleteCashDay(group.day)));
     row.children[6].appendChild(actions);
     body.appendChild(row);
 
@@ -2743,7 +2738,10 @@ function renderHistory() {
   target.appendChild(wrap);
 }
 
-function openDayDetail(title, body) {
+let openDetailKey = "";
+
+function openDayDetail(title, body, day) {
+  openDetailKey = day || openDetailKey;
   $("dayTitle").textContent = title;
   const slot = $("dayDetail");
   slot.innerHTML = "";
@@ -2752,8 +2750,19 @@ function openDayDetail(title, body) {
 }
 
 function closeDayDetail() {
+  openDetailKey = "";
   $("dayModal").classList.add("hidden");
   $("dayDetail").innerHTML = "";
+}
+
+function refreshOpenDetail() {
+  if (!openDetailKey || $("dayModal").classList.contains("hidden")) return;
+  const group = historyGroups().find(item => item.day === openDetailKey);
+  if (!group) {
+    closeDayDetail();
+    return;
+  }
+  openDayDetail(prettyDay(group.day) + " · " + dayTitle(group.day), dayDetailBody(group), group.day);
 }
 
 $("dayClose").addEventListener("click", closeDayDetail);
@@ -2794,6 +2803,7 @@ function render() {
   renderClientSummary(sales);
   renderBreakdown(sales,$("closingBreakdown"));
   renderHistory();
+  refreshOpenDetail();
 }
 
 let clearCalCursor = new Date();
