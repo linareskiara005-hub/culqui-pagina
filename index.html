@@ -109,10 +109,10 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
   border:1px solid var(--line);
   background:var(--card);
   color:var(--muted);
-  padding:10px 14px;
-  border-radius:14px;
+  padding:18px 32px;
+  border-radius:18px;
   font-weight:800;
-  font-size:20px;
+  font-size:28px;
   white-space:nowrap;
   box-shadow:0 3px 12px rgba(20,40,70,.03);
   transition:.2s;
@@ -144,15 +144,15 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
 .panel {
   background:var(--card);
   border:1px solid var(--line);
-  border-radius:16px;
-  padding:14px;
-  margin-bottom:10px;
+  border-radius:18px;
+  padding:22px;
+  margin-bottom:12px;
   box-shadow:var(--shadow);
 }
 .panel-title {
   display:flex;align-items:center;gap:10px;
   font-family:"Manrope",sans-serif;
-  font-size:24px;font-weight:800;margin:0 0 10px;
+  font-size:30px;font-weight:800;margin:0 0 12px;
 }
 .panel-title:before {
   content:"";width:5px;height:23px;
@@ -203,7 +203,7 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
   position:relative;overflow:hidden;
   background:var(--card);
   border:1px solid var(--line);
-  border-radius:14px;padding:10px 12px;
+  border-radius:16px;padding:16px 18px;
   box-shadow:var(--shadow);
 }
 .stat:after {
@@ -214,7 +214,7 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
 .stat span {display:block;color:var(--muted);font-size:19px;font-weight:700}
 .stat strong {
   display:block;font-family:"Manrope",sans-serif;
-  font-size:28px;margin-top:4px;overflow-wrap:anywhere;
+  font-size:34px;margin-top:6px;overflow-wrap:anywhere;
 }
 .stat:nth-child(1) {background:#f1fbf8;border-bottom:4px solid #10a99a}
 .stat:nth-child(1) strong {color:#087f78}
@@ -423,11 +423,15 @@ details[open] > .group-head:after {content:"−"}
 }
 .total-box strong {color:var(--accent)}
 .history-day {
-  margin:0 0 16px;padding:14px;border-radius:16px;
+  margin:0 0 18px;padding:18px;border-radius:18px;
   background:linear-gradient(180deg,#f7f3ff,#fff 70px);
   border:1px solid #e3d8fb;
 }
-.history-day h3 {margin:0 0 8px;font-size:24px;font-weight:800;color:#5b3cb5}
+.history-head {display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px}
+.history-day h3 {margin:0;font-size:28px;font-weight:800;color:#5b3cb5;min-width:0}
+.history-detail {flex:0 0 auto;background:#9874e8;letter-spacing:.4px}
+.modal-card.day-card {width:min(920px,100%);max-height:calc(100vh - 32px);overflow:auto}
+.day-card #dayClose {width:100%;margin-top:8px}
 .ref-card.tone-0 {border-left:6px solid #10a99a;background:#f3fbf8}
 .ref-card.tone-1 {border-left:6px solid #ef9845;background:#fff8f1}
 .ref-card.tone-2 {border-left:6px solid #3b82f6;background:#f3f7ff}
@@ -550,7 +554,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
   .logo {font-size:30px}
   .topbar {align-items:center;flex-wrap:nowrap}
   .tabs {display:flex;width:auto;gap:6px}
-  .tab {padding:10px 8px;font-size:16px}
+  .tab {padding:14px 12px;font-size:20px}
   .tools {justify-content:flex-end;flex-wrap:nowrap}
   .tools .btn.small {font-size:13px;padding:8px 8px}
   .sync-status {font-size:12px}
@@ -744,6 +748,14 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 
     <p class="footer-note">CULQUI · Control de ventas, caja y comisión</p>
   </main>
+</div>
+
+<div id="dayModal" class="modal hidden">
+  <div class="modal-card day-card">
+    <h2 class="panel-title" id="dayTitle">Detalle</h2>
+    <div id="dayDetail"></div>
+    <button type="button" class="btn gray" id="dayClose">Cerrar</button>
+  </div>
 </div>
 
 <div id="clearModal" class="modal hidden">
@@ -2342,9 +2354,16 @@ function renderHistory() {
     const t = block.totals;
     const day = document.createElement("article");
     day.className = "history-day";
+    const head = document.createElement("div");
+    head.className = "history-head";
     const headingDay = document.createElement("h3");
     headingDay.textContent = prettyDay(block.day) + " · " + block.title;
-    day.appendChild(headingDay);
+    const detailBtn = document.createElement("button");
+    detailBtn.type = "button";
+    detailBtn.className = "btn small history-detail";
+    detailBtn.textContent = "DETALLE";
+    head.append(headingDay, detailBtn);
+    day.appendChild(head);
 
     const groups = groupSales(block.sales).sort((a, b) => {
       const left = POS_ORDER.indexOf(a.reference);
@@ -2465,14 +2484,6 @@ function renderHistory() {
     });
     paintDay();
 
-    const item = document.createElement("details");
-    item.className = "history-item";
-    item.open = block.open;
-
-    const summary = document.createElement("summary");
-    summary.textContent = "Ver detalle de este día";
-    item.appendChild(summary);
-
     const body = document.createElement("div");
     body.className = "history-details";
     if (block.when) {
@@ -2505,11 +2516,28 @@ function renderHistory() {
     const salesContainer = document.createElement("div");
     renderSales(block.sales,salesContainer);
     body.appendChild(salesContainer);
-    item.appendChild(body);
-    day.appendChild(item);
+    detailBtn.addEventListener("click",() => openDayDetail(prettyDay(block.day) + " · " + block.title, body));
     target.appendChild(day);
   });
 }
+
+function openDayDetail(title, body) {
+  $("dayTitle").textContent = title;
+  const slot = $("dayDetail");
+  slot.innerHTML = "";
+  slot.appendChild(body);
+  $("dayModal").classList.remove("hidden");
+}
+
+function closeDayDetail() {
+  $("dayModal").classList.add("hidden");
+  $("dayDetail").innerHTML = "";
+}
+
+$("dayClose").addEventListener("click", closeDayDetail);
+$("dayModal").addEventListener("click", event => {
+  if (event.target === $("dayModal")) closeDayDetail();
+});
 
 function render() {
   const sales = data.current.sales || [];
@@ -2734,6 +2762,7 @@ $("closeButton").addEventListener("click",() => {
 });
 
 function showPage(page) {
+  closeDayDetail();
   const colors = {
     register:"#10a99a",
     closing:"#ef9845",
