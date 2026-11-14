@@ -165,11 +165,16 @@ main {max-width:1080px;margin:12px auto;padding:0 14px 20px}
 .register-split {
   display:grid;
   grid-template-columns:minmax(0,1fr) minmax(320px,1fr);
+  grid-template-areas:"fields accounts" "fields pay";
   gap:12px;
-  align-items:start;
+  align-items:stretch;
 }
 .register-split .grid {grid-template-columns:1fr}
-.register-split form .btn[type="submit"] {width:100%}
+.sale-fields {grid-area:fields}
+.accounts-panel {grid-area:accounts}
+.sale-pay {grid-area:pay;display:flex;flex-direction:column;gap:10px}
+.sale-pay .calculation {flex:1;margin:0}
+.sale-pay .btn {width:100%}
 .register-split > .panel {margin-bottom:0;min-width:0}
 .accounts-panel {display:flex;flex-direction:column}
 .accounts-panel .client-lines {flex:1}
@@ -527,7 +532,10 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 .sync-status {font-size:15px;font-weight:700;color:var(--muted);align-self:center}
 
 @media(max-width:860px) {
-  .register-split {grid-template-columns:1fr}
+  .register-split {
+    grid-template-columns:1fr;
+    grid-template-areas:"fields" "pay" "accounts";
+  }
 }
 @media(max-width:650px) {
   main {padding:0 12px 16px;margin-top:10px}
@@ -619,11 +627,10 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
         <div class="stat"><span>COMISIONES</span><strong id="totalCommission">S/ 0.00</strong></div>
         <div class="stat"><span>DEPÓSITO NETO</span><strong id="totalNet">S/ 0.00</strong></div>
       </div>
-      <div class="register-split">
-      <div class="panel">
+      <form id="saleForm" class="register-split">
+      <div class="panel sale-fields">
         <h2 class="panel-title">Registrar nueva venta</h2>
         <p class="subtitle">Completa los datos para calcular automáticamente la comisión.</p>
-        <form id="saleForm">
           <div class="grid">
             <div class="field">
               <label>FECHA</label>
@@ -663,24 +670,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
                 <button type="button" class="btn gray small" id="saveRateButton">Guardar tipo</button>
               </div>
             </div>
-            <div class="field">
-              <label>MONTO DE VENTA (S/)</label>
-              <div class="amount-row">
-                <input id="amount" type="number" min="0.01" step="0.01" placeholder="Ej. 500.00" required>
-                <button type="button" class="icon-btn split-btn" id="splitButton" title="Divisor">D</button>
-              </div>
-              <p id="splitNote" class="split-note hidden"></p>
-            </div>
           </div>
-          <div class="calculation" id="calculation">
-            Comisión: <strong>S/ 0.00</strong><br>
-            Neto: <strong>S/ 0.00</strong><br>
-            Depósito: <strong>S/ 0.00</strong>
-          </div>
-          <div style="margin-top:10px">
-            <button class="btn" type="submit">＋ GUARDAR VENTA</button>
-          </div>
-        </form>
       </div>
 
       <div class="panel accounts-panel">
@@ -689,7 +679,24 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
         <div id="clientSummary" class="client-lines"></div>
         <button type="button" class="btn gray small" id="clearTodayButton">Borrar datos de hoy</button>
       </div>
+
+      <div class="panel sale-pay">
+        <div class="field">
+          <label>MONTO DE VENTA (S/)</label>
+          <div class="amount-row">
+            <input id="amount" type="number" min="0.01" step="0.01" placeholder="Ej. 500.00" required>
+            <button type="button" class="icon-btn split-btn" id="splitButton" title="Divisor">D</button>
+          </div>
+          <p id="splitNote" class="split-note hidden"></p>
+        </div>
+        <div class="calculation" id="calculation">
+          Comisión: <strong>S/ 0.00</strong><br>
+          Neto: <strong>S/ 0.00</strong><br>
+          Depósito: <strong>S/ 0.00</strong>
+        </div>
+        <button class="btn" type="submit">＋ GUARDAR VENTA</button>
       </div>
+      </form>
     </section>
 
     <!-- CIERRE DE CAJA -->
