@@ -728,7 +728,6 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <section id="closingPage" class="hidden section-orange">
       <div class="panel">
         <h2 class="panel-title">Cierre de caja actual</h2>
-        <p class="subtitle" id="cashInfo"></p>
         <div class="stats">
           <div class="stat"><span>TOTAL VENDIDO</span><strong id="closeSales">S/ 0.00</strong></div>
           <div class="stat"><span>COMISIONES</span><strong id="closeCommission">S/ 0.00</strong></div>
@@ -743,7 +742,6 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
           <input id="observations" placeholder="Escribe alguna observación">
         </div>
         <button class="btn orange" id="closeButton">▣ CERRAR CAJA Y ABRIR OTRA</button>
-        <p class="subtitle" style="margin:14px 0 0">Si no la cierras, a las 4:00 a. m. se cierra sola, pasa al historial y el día nuevo empieza en S/ 0.00. En Historial puedes editar o eliminar esa caja y las de días anteriores.</p>
       </div>
     </section>
 
@@ -751,7 +749,6 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <section id="historyPage" class="hidden section-purple">
       <div class="panel">
         <h2 class="panel-title">Historial por día</h2>
-        <p class="subtitle">Cada día es un grupo. La flecha abre las ventas. A las 4:00 a. m. la caja abierta se cierra sola. Puedes ver el detalle, editar la fecha o eliminar el día.</p>
         <div class="history-find">
           <label for="historyDate">FECHA</label>
           <input id="historyDate" type="date">
@@ -2769,8 +2766,6 @@ function render() {
   $("closeSales").textContent = money(t.sales);
   $("closeCommission").textContent = money(t.commission);
   $("closeNet").textContent = money(t.net);
-
-  $("cashInfo").textContent = "Caja abierta desde " + dateTime(data.current.openedAt) + ". Si no la cierras, a las 4:00 a. m. pasa al historial y esta caja queda en S/ 0.00.";
 
   renderClientSummary(sales);
   renderBreakdown(sales,$("closingBreakdown"));
