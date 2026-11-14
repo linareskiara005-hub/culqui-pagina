@@ -278,6 +278,13 @@ input:focus,select:focus {
 }
 .calculation strong {color:var(--accent)}
 .rate-actions {display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.rate-box {
+  display:flex;align-items:stretch;gap:0;
+  background:var(--card2);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+}
+.rate-box select {flex:1;min-width:0;width:auto;border:0;border-radius:0;background:transparent;box-shadow:none}
+.rate-box .btn {border-radius:0;margin:0;white-space:nowrap}
+.rate-box:focus-within {border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,169,154,.12)}
 
 /* RENGLONES DE CLIENTES */
 .client-lines {display:flex;flex-direction:column}
@@ -653,8 +660,8 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
             </div>
             <div class="field">
               <label>TIPO DE COMISIÓN</label>
-              <select id="card"></select>
-              <div class="rate-actions">
+              <div class="rate-box">
+                <select id="card"></select>
                 <button type="button" class="btn gray small" id="addRateButton">＋ Otro tipo</button>
                 <button type="button" class="btn gray small hidden" id="removeRateButton">Quitar este tipo</button>
               </div>
