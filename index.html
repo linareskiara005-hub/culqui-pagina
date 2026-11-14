@@ -289,8 +289,36 @@ input:focus,select:focus {
 .wipe-list {display:grid;gap:8px;margin:12px 0 14px}
 .wipe-list .btn {width:100%}
 .wipe-day {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 14px;padding-top:12px;border-top:1px solid var(--line)}
-.wipe-day input {flex:1;min-width:160px;max-width:none}
 .wipe-day .btn {flex:1 1 100%}
+.clear-day-show {
+  flex:1;min-width:160px;min-height:54px;padding:10px 14px;text-align:left;
+  border:1px solid var(--line);border-radius:14px;background:var(--card2);
+  color:var(--text);font-size:22px;font-weight:800;cursor:pointer;
+}
+.modal-card.clear-card {width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto}
+.clear-card.cal-open .subtitle {display:none}
+.clear-cal {
+  flex:1 1 100%;padding:14px;border:1px solid var(--line);border-radius:16px;
+  background:var(--card2);
+}
+.clear-cal-head {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.clear-cal-head strong {font-size:22px}
+.clear-cal-nav {
+  width:52px;height:52px;border-radius:14px;border:1px solid var(--line);
+  background:var(--card);color:var(--text);font-size:32px;line-height:1;cursor:pointer;
+}
+.clear-cal-nav:disabled {opacity:.35;cursor:default}
+.clear-cal-week,.clear-cal-grid {display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.clear-cal-week span {text-align:center;font-size:16px;font-weight:800;color:var(--muted);padding:4px 0}
+.clear-cal-grid button {
+  height:46px;border-radius:12px;border:1px solid transparent;background:transparent;
+  color:var(--text);font-size:22px;font-weight:800;cursor:pointer;
+}
+.clear-cal-grid button:hover:not(:disabled) {background:var(--card)}
+.clear-cal-grid button.today {border-color:#9874e8}
+.clear-cal-grid button.picked {background:#9874e8;color:#fff}
+.clear-cal-grid button:disabled {opacity:.28;cursor:default}
+.clear-cal-grid button.empty {visibility:hidden}
 .history-find {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .history-find input {max-width:220px}
 .modal {
@@ -675,7 +703,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 </div>
 
 <div id="clearModal" class="modal hidden">
-  <div class="modal-card">
+  <div class="modal-card clear-card">
     <h2 class="panel-title">Borrar historial</h2>
     <p class="subtitle">Elige cuánto historial cerrado quieres borrar. La caja de hoy se conserva.</p>
     <div class="wipe-list">
@@ -686,8 +714,10 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     </div>
     <p class="subtitle">O elige un solo día. Puede ser hoy, ayer u otra fecha.</p>
     <div class="wipe-day">
-      <label for="clearDay">DÍA</label>
-      <input id="clearDay" type="date">
+      <label for="clearDayShow">DÍA</label>
+      <button type="button" class="clear-day-show" id="clearDayShow">Elegir día</button>
+      <input id="clearDay" type="hidden">
+      <div id="clearCal" class="clear-cal hidden"></div>
       <button type="button" class="btn gray small" id="clearDayButton">Borrar este día</button>
     </div>
     <button type="button" class="btn gray" id="clearCancel">Cancelar</button>
@@ -2454,15 +2484,93 @@ function render() {
   renderHistory();
 }
 
+let clearCalCursor = new Date();
+
+function showClearDay() {
+  const key = $("clearDay").value;
+  $("clearDayShow").textContent = key ? prettyDay(key) : "Elegir día";
+}
+
+function renderClearCalendar() {
+  const year = clearCalCursor.getFullYear();
+  const month = clearCalCursor.getMonth();
+  const today = inputDateValue(new Date());
+  const todayDate = new Date();
+  const picked = $("clearDay").value;
+  const title = new Date(year, month, 1).toLocaleDateString("es-PE",{month:"long",year:"numeric"});
+  const label = title.charAt(0).toUpperCase() + title.slice(1);
+  const startPad = (new Date(year, month, 1).getDay() + 6) % 7;
+  const days = new Date(year, month + 1, 0).getDate();
+  const atCurrentMonth = year === todayDate.getFullYear() && month === todayDate.getMonth();
+  let cells = "";
+  for (let i = 0; i < startPad; i++) cells += '<button type="button" class="empty" tabindex="-1" disabled></button>';
+  for (let day = 1; day <= days; day++) {
+    const key = year + "-" + String(month + 1).padStart(2,"0") + "-" + String(day).padStart(2,"0");
+    const classes = [];
+    if (key === picked) classes.push("picked");
+    if (key === today) classes.push("today");
+    cells += '<button type="button" class="' + classes.join(" ") + '" data-day="' + key + '"' + (key > today ? " disabled" : "") + ">" + day + "</button>";
+  }
+  $("clearCal").innerHTML =
+    '<div class="clear-cal-head">' +
+      '<button type="button" class="clear-cal-nav" data-shift="-1" aria-label="Mes anterior">‹</button>' +
+      "<strong>" + label + "</strong>" +
+      '<button type="button" class="clear-cal-nav" data-shift="1" aria-label="Mes siguiente"' + (atCurrentMonth ? " disabled" : "") + ">›</button>" +
+    "</div>" +
+    '<div class="clear-cal-week"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>' +
+    '<div class="clear-cal-grid">' + cells + "</div>";
+}
+
+function closeClearCalendar() {
+  $("clearCal").classList.add("hidden");
+  $("clearModal").querySelector(".modal-card").classList.remove("cal-open");
+  $("clearModal").querySelector(".wipe-list").classList.remove("hidden");
+}
+
+function openClearCalendar() {
+  const parts = String($("clearDay").value || inputDateValue(new Date())).split("-").map(Number);
+  clearCalCursor = new Date(parts[0], (parts[1] || 1) - 1, 1);
+  renderClearCalendar();
+  $("clearModal").querySelector(".modal-card").classList.add("cal-open");
+  $("clearModal").querySelector(".wipe-list").classList.add("hidden");
+  $("clearCal").classList.remove("hidden");
+  $("clearCal").scrollIntoView({block:"nearest"});
+}
+
 $("clearHistoryButton").addEventListener("click",() => {
   const field = $("clearDay");
   const today = inputDateValue(new Date());
-  field.max = today;
   if (!field.value || field.value > today) field.value = today;
+  showClearDay();
+  closeClearCalendar();
   $("clearModal").classList.remove("hidden");
 });
 
+$("clearDayShow").addEventListener("click",() => {
+  if ($("clearCal").classList.contains("hidden")) openClearCalendar();
+  else closeClearCalendar();
+});
+
+$("clearCal").addEventListener("click", event => {
+  const nav = event.target.closest("[data-shift]");
+  if (nav) {
+    if (nav.disabled) return;
+    const next = new Date(clearCalCursor.getFullYear(), clearCalCursor.getMonth() + Number(nav.dataset.shift), 1);
+    const todayDate = new Date();
+    if (next > new Date(todayDate.getFullYear(), todayDate.getMonth(), 1)) return;
+    clearCalCursor = next;
+    renderClearCalendar();
+    return;
+  }
+  const day = event.target.closest("[data-day]");
+  if (!day || day.disabled) return;
+  $("clearDay").value = day.dataset.day;
+  showClearDay();
+  renderClearCalendar();
+});
+
 $("clearCancel").addEventListener("click",() => {
+  closeClearCalendar();
   $("clearModal").classList.add("hidden");
 });
 
