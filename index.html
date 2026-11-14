@@ -883,7 +883,10 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <p class="subtitle">Cambia el monto y la comisión. Sigue siendo la misma venta.</p>
     <div class="field">
       <label>MONTO DE LA VENTA (S/)</label>
-      <input id="editAmount" type="number" min="0.01" step="0.01">
+      <div class="amount-row">
+        <input id="editAmount" type="number" min="0.01" step="0.01">
+        <button type="button" class="icon-btn split-btn" id="editSplitButton" title="Dividir comisión">D</button>
+      </div>
     </div>
     <div id="editSimple">
       <div class="field">
@@ -1365,6 +1368,7 @@ function editSale(id) {
   const divided = !!(sale.split && sale.split.special && sale.split.remaining);
   $("editSimple").classList.toggle("hidden", divided);
   $("editSplit").classList.toggle("hidden", !divided);
+  $("editSplitButton").classList.toggle("active", divided);
   if (divided) {
     $("editSpecialAmount").value = String(sale.split.special.amount);
     editSplitChoice = Math.abs(Number(sale.split.special.rate) - SPLIT_NORMAL_RATE) < 0.000001 ? "normal" : "diners";
@@ -1958,6 +1962,26 @@ $("editChoice").addEventListener("click", event => {
   editSplitChoice = button.dataset.choice;
   markChoice("editChoice", editSplitChoice);
   renderEditPreview();
+});
+$("editSplitButton").addEventListener("click", () => {
+  const turningOn = $("editSplit").classList.contains("hidden");
+  if (turningOn) {
+    const amount = Number($("editAmount").value);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert("Escribe primero un monto de venta mayor que 0.");
+      $("editAmount").focus();
+      return;
+    }
+    if (!$("editSpecialAmount").value) {
+      editSplitChoice = "diners";
+      markChoice("editChoice", editSplitChoice);
+    }
+  }
+  $("editSimple").classList.toggle("hidden", turningOn);
+  $("editSplit").classList.toggle("hidden", !turningOn);
+  $("editSplitButton").classList.toggle("active", turningOn);
+  renderEditPreview();
+  if (turningOn) $("editSpecialAmount").focus();
 });
 $("splitClear").addEventListener("click",() => {
   clearPendingSplit();
