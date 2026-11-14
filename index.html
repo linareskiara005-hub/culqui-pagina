@@ -169,8 +169,10 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
   gap:12px;
   align-items:stretch;
 }
-.register-split .grid {grid-template-columns:1fr}
-.sale-fields {grid-area:fields}
+.register-split .grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+.sale-fields {grid-area:fields;display:flex;flex-direction:column}
+.sale-fields .grid {flex:1}
+.sale-fields .btn[type="submit"] {width:100%;margin-top:12px}
 .accounts-panel {grid-area:accounts}
 .sale-pay {grid-area:pay;display:flex;flex-direction:column;gap:10px}
 .sale-pay .calculation {flex:1;margin:0}
@@ -678,6 +680,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
               </div>
             </div>
           </div>
+        <button class="btn" type="submit">＋ GUARDAR VENTA</button>
       </div>
 
       <div class="panel accounts-panel">
@@ -701,7 +704,6 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
           Neto: <strong>S/ 0.00</strong><br>
           Depósito: <strong>S/ 0.00</strong>
         </div>
-        <button class="btn" type="submit">＋ GUARDAR VENTA</button>
       </div>
       </form>
     </section>
