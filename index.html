@@ -196,6 +196,9 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
 .tab.blue {color:#2563eb;border-color:#c9dbfb}
 .tab.blue.active {background:#3b82f6;border-color:#3b82f6;color:white}
 .chart-lead {margin:0 0 12px}
+.chart-period {display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}
+.chart-period .btn.on {background:#3b82f6}
+.chart-period input {max-width:190px}
 .chart-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .chart-card {
   background:var(--card);border:1px solid var(--line);border-top:4px solid #3b82f6;
@@ -788,7 +791,14 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 
     <!-- GRÁFICOS -->
     <section id="chartsPage" class="hidden">
-      <p class="subtitle chart-lead">Salen de las ventas y los cierres guardados. Al reiniciar la página se vuelven a armar con esos movimientos.</p>
+      <div class="chart-period">
+        <button type="button" class="btn gray small" data-chart-period="today">Hoy</button>
+        <button type="button" class="btn gray small" data-chart-period="yesterday">Ayer</button>
+        <button type="button" class="btn gray small on" data-chart-period="7">7 días</button>
+        <label for="chartDay">DÍA</label>
+        <input id="chartDay" type="date">
+      </div>
+      <p class="subtitle chart-lead" id="chartPeriodNote">Últimos 7 días.</p>
       <div id="chartGrid" class="chart-grid"></div>
     </section>
 
@@ -2689,8 +2699,57 @@ function svgEl(name, attrs) {
   return node;
 }
 
+let chartPeriod = "7";
+let chartCustomDay = "";
+
+function blankChartDay(key) {
+  const today = businessDay(Date.now());
+  return {
+    day:key,
+    live:key === today,
+    label:key === today ? "Hoy" : shortDay(key),
+    sales:0,
+    commission:0,
+    deposit:0,
+    bank:null,
+    byType:new Map(),
+    byClient:new Map(),
+    list:[]
+  };
+}
+
+function periodKeys() {
+  const today = businessDay(Date.now());
+  if (chartPeriod === "today") return [today];
+  if (chartPeriod === "yesterday") return [shiftDayKey(today, -1)];
+  if (chartPeriod === "day" && chartCustomDay && chartCustomDay <= today) return [chartCustomDay];
+  const keys = [];
+  for (let back = 6; back >= 0; back--) keys.push(shiftDayKey(today, -back));
+  return keys;
+}
+
+function syncChartPeriod() {
+  document.querySelectorAll("[data-chart-period]").forEach(button => {
+    button.classList.toggle("on", button.dataset.chartPeriod === chartPeriod);
+  });
+  const input = $("chartDay");
+  const today = businessDay(Date.now());
+  if (input) {
+    input.max = today;
+    if (chartPeriod === "day") input.value = chartCustomDay;
+  }
+  const keys = periodKeys();
+  const note = $("chartPeriodNote");
+  if (!note || !keys.length) return;
+  if (chartPeriod === "today") note.textContent = "Hoy · " + prettyDay(keys[0]);
+  else if (chartPeriod === "yesterday") note.textContent = "Ayer · " + prettyDay(keys[0]);
+  else if (chartPeriod === "day") note.textContent = "Día elegido · " + prettyDay(keys[0]);
+  else note.textContent = "Últimos 7 días · " + prettyDay(keys[0]) + " al " + prettyDay(keys[keys.length - 1]);
+}
+
 function chartMovements() {
-  const days = historyGroups().slice().reverse().map(group => {
+  const byDay = new Map();
+  historyGroups().forEach(group => {
     const t = totals(group.sales || []);
     let bank = 0;
     let anyBank = false;
@@ -2710,7 +2769,7 @@ function chartMovements() {
         byType.set(key, (byType.get(key) || 0) + part.deposit);
       });
     });
-    return {
+    byDay.set(group.day, {
       day:group.day,
       live:!!group.live,
       label:group.live ? "Hoy" : shortDay(group.day),
@@ -2721,8 +2780,9 @@ function chartMovements() {
       byType,
       byClient,
       list:group.sales || []
-    };
+    });
   });
+  const days = periodKeys().map(key => byDay.get(key) || blankChartDay(key));
   const sales = [];
   days.forEach(day => sales.push(...day.list));
   return {days, sales};
@@ -2903,11 +2963,13 @@ function drawVertical(body, days) {
   const max = Math.max(...days.map(day => day.deposit), 1);
   const base = 168;
   days.forEach((day, index) => {
-    const h = Math.max(3, (day.deposit / max) * 142);
+    const h = day.deposit > 0 ? Math.max(3, (day.deposit / max) * 142) : 0;
     const x = 14 + index * slot;
-    const bar = svgEl("rect", {x, y:base - h, width:26, height:h, rx:6, fill:"#3b82f6"});
-    bar.style.pointerEvents = "none";
-    svg.appendChild(bar);
+    if (h) {
+      const bar = svgEl("rect", {x, y:base - h, width:26, height:h, rx:6, fill:"#3b82f6"});
+      bar.style.pointerEvents = "none";
+      svg.appendChild(bar);
+    }
     const hit = svgEl("rect", {x:x - 4, y:16, width:34, height:base - 16, fill:"transparent"});
     tipOn(hit, dayLines(day));
     svg.appendChild(hit);
@@ -3239,6 +3301,7 @@ function drawScatter(body, sales) {
 function renderCharts() {
   const host = $("chartGrid");
   if (!host) return;
+  syncChartPeriod();
   host.innerHTML = "";
   const move = chartMovements();
   const days = move.days;
@@ -3758,6 +3821,26 @@ function applyTheme() {
   document.body.classList.toggle("dark",dark);
   $("themeButton").textContent = dark ? "☀ Claro" : "☾ Oscuro";
 }
+
+document.querySelectorAll("[data-chart-period]").forEach(button => {
+  button.addEventListener("click", () => {
+    chartPeriod = button.dataset.chartPeriod;
+    renderCharts();
+  });
+});
+$("chartDay").addEventListener("change", () => {
+  const today = businessDay(Date.now());
+  const value = $("chartDay").value;
+  if (!value || value > today) {
+    chartPeriod = "7";
+    chartCustomDay = "";
+    $("chartDay").value = "";
+  } else {
+    chartPeriod = "day";
+    chartCustomDay = value;
+  }
+  renderCharts();
+});
 
 $("themeButton").addEventListener("click",() => {
   const dark = !document.body.classList.contains("dark");
