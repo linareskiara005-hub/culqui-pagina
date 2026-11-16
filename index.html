@@ -193,6 +193,31 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
 .register-split .row-actions {grid-area:actions;justify-self:end}
 #closingPage .panel {border-top:4px solid #ef9845;background:linear-gradient(180deg,#fff8f1,var(--card) 90px)}
 #historyPage .panel {border-top:4px solid #9874e8;background:linear-gradient(180deg,#f7f3ff,var(--card) 90px)}
+.tab.blue {color:#2563eb;border-color:#c9dbfb}
+.tab.blue.active {background:#3b82f6;border-color:#3b82f6;color:white}
+.chart-lead {margin:0 0 12px}
+.chart-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.chart-card {
+  background:var(--card);border:1px solid var(--line);border-top:4px solid #3b82f6;
+  border-radius:18px;padding:16px 16px 12px;box-shadow:var(--shadow);min-width:0;
+}
+.chart-card h3 {margin:0 0 4px;font-family:"Manrope",sans-serif;font-size:20px}
+.chart-note {margin:0 0 8px;color:var(--muted);font-size:15px}
+.chart-body {min-height:160px;overflow-x:auto}
+.chart-svg {width:100%;height:200px;display:block}
+.chart-legend {display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px}
+.chart-legend span {display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
+.chart-legend i {width:10px;height:10px;border-radius:3px;display:inline-block;flex:0 0 auto}
+.funnel {display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 0}
+.funnel-step {
+  min-height:44px;padding:8px 10px;border-radius:10px;color:white;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-weight:800;font-size:14px;line-height:1.2;
+}
+.progress-row {display:grid;grid-template-columns:minmax(72px,130px) minmax(0,1fr) auto;gap:8px;align-items:center;margin:8px 0;font-size:14px;font-weight:700}
+.progress-row span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.progress-track {height:14px;background:var(--card2);border-radius:20px;overflow:hidden}
+.progress-fill {height:100%;border-radius:20px}
 
 /* ESTADÍSTICAS */
 .stats {
@@ -556,6 +581,9 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 .sync-line {display:flex;gap:8px;align-items:center;min-height:0;margin-bottom:4px}
 .sync-status {font-size:15px;font-weight:700;color:var(--muted);align-self:center}
 
+@media(max-width:1100px) {
+  .chart-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:860px) {
   .register-split {
     grid-template-columns:1fr;
@@ -582,6 +610,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
   .stat span {font-size:17px}
   .grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .register-split {grid-template-columns:1fr}
+  .chart-grid {grid-template-columns:1fr}
   .client-line {align-items:center;flex-wrap:wrap;gap:8px}
   .client-name {width:100%}
   .row-actions {margin-left:auto}
@@ -636,6 +665,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
       <nav class="tabs">
         <button class="tab active" data-page="register">✦ Ventas</button>
         <button class="tab orange" data-page="closing">▣ Cierre</button>
+        <button class="tab blue" data-page="charts">◐ Gráficos</button>
         <button class="tab purple" data-page="history">◷ Historial</button>
       </nav>
       <div class="tools">
@@ -743,6 +773,12 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
         </div>
         <button class="btn orange" id="closeButton">▣ CERRAR CAJA Y ABRIR OTRA</button>
       </div>
+    </section>
+
+    <!-- GRÁFICOS -->
+    <section id="chartsPage" class="hidden">
+      <p class="subtitle chart-lead">Salen de las ventas y los cierres guardados. Al reiniciar la página se vuelven a armar con esos movimientos.</p>
+      <div id="chartGrid" class="chart-grid"></div>
     </section>
 
     <!-- HISTORIAL -->
@@ -922,6 +958,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
 const LEGACY_KEY = "CULQUI_CAJAS_V3";
 const LEGACY_OWNER_KEY = "CULQUI_LEGACY_OWNER";
 const THEME_KEY = "CULQUI_DARK";
+const PAGE_KEY = "CULQUI_PAGE";
 const RATES_KEY = "CULQUI_RATES_V1";
 const SESSION_KEY = "CULQUI_USER";
 const ACCOUNTS = {
@@ -2566,6 +2603,523 @@ function saveCashEdit(event) {
 }
 
 const openHistoryDays = new Set();
+const INCOME_COLORS = ["#ef9845","#3b82f6","#e05b68","#101c32","#0ea5e9","#c56a12"];
+
+function rateKey(rate) {
+  return String(Math.round((Number(rate) || 0) * 1000000) / 1000000);
+}
+
+function incomeTypeLabel(rate) {
+  const percent = Math.round((Number(rate) || 0) * 10000) / 100;
+  const match = rates.find(item => Math.abs(Number(item.percent) - percent) < 0.001);
+  if (match) return match.name + " · " + formatPercent(match.percent) + "%";
+  return rateLabel(rate);
+}
+
+function incomeColor(rate, index) {
+  const value = Number(rate) || 0;
+  if (Math.abs(value - SPLIT_NORMAL_RATE) < 0.000001) return "#10a99a";
+  if (Math.abs(value - SPLIT_DINERS_RATE) < 0.000001) return "#9874e8";
+  return INCOME_COLORS[index % INCOME_COLORS.length];
+}
+
+function normalizeIncoming(part) {
+  const rate = Number(part.rate);
+  const amount = Number(part.amount);
+  const safeRate = Number.isFinite(rate) ? rate : 0;
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  let commission = Number(part.commission);
+  let deposit = Number(part.deposit);
+  if (!Number.isFinite(commission)) commission = roundMoney(safeAmount * safeRate);
+  if (!Number.isFinite(deposit)) deposit = roundMoney(safeAmount - commission);
+  return {rate:safeRate, deposit:Number.isFinite(deposit) ? deposit : 0};
+}
+
+function saleIncomingParts(sale) {
+  const split = sale && sale.split;
+  if (split && split.special && split.remaining) {
+    return [normalizeIncoming(split.special), normalizeIncoming(split.remaining)];
+  }
+  return [normalizeIncoming({
+    rate:sale.rate,
+    amount:sale.amount,
+    commission:sale.commission,
+    deposit:sale.deposit != null ? sale.deposit : sale.net
+  })];
+}
+
+function incomeTypeKeys() {
+  const keys = new Set();
+  rates.forEach(rate => keys.add(rateKey(rate.percent / 100)));
+  historyGroups().forEach(group => {
+    (group.sales || []).forEach(sale => {
+      saleIncomingParts(sale).forEach(part => keys.add(rateKey(part.rate)));
+    });
+  });
+  return [...keys].sort((a, b) => {
+    const rank = key => {
+      const n = Number(key);
+      if (Math.abs(n - SPLIT_NORMAL_RATE) < 0.000001) return 0;
+      if (Math.abs(n - SPLIT_DINERS_RATE) < 0.000001) return 1;
+      return 2 + n;
+    };
+    return rank(a) - rank(b);
+  });
+}
+
+function shortDay(key) {
+  const pretty = prettyDay(key);
+  return pretty.length >= 5 ? pretty.slice(0, 5) : pretty;
+}
+
+function svgEl(name, attrs) {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+  Object.keys(attrs || {}).forEach(key => node.setAttribute(key, attrs[key]));
+  return node;
+}
+
+function chartMovements() {
+  const days = historyGroups().slice().reverse().map(group => {
+    const t = totals(group.sales || []);
+    let bank = 0;
+    let anyBank = false;
+    Object.keys(group.banks || {}).forEach(key => {
+      const value = receivedValue(group.banks[key]);
+      if (value == null) return;
+      anyBank = true;
+      bank += value;
+    });
+    const byType = new Map();
+    const byClient = new Map();
+    (group.sales || []).forEach(sale => {
+      const client = sale.client || "Sin cliente";
+      byClient.set(client, (byClient.get(client) || 0) + Number(sale.deposit ?? sale.net ?? 0));
+      saleIncomingParts(sale).forEach(part => {
+        const key = rateKey(part.rate);
+        byType.set(key, (byType.get(key) || 0) + part.deposit);
+      });
+    });
+    return {
+      day:group.day,
+      live:!!group.live,
+      label:group.live ? "Hoy" : shortDay(group.day),
+      sales:roundMoney(t.sales),
+      commission:roundMoney(t.commission),
+      deposit:roundMoney(t.net),
+      bank:anyBank ? roundMoney(bank) : null,
+      byType,
+      byClient,
+      list:group.sales || []
+    };
+  });
+  const sales = [];
+  days.forEach(day => sales.push(...day.list));
+  return {days, sales};
+}
+
+function typeRank(key) {
+  const n = Number(key);
+  if (Math.abs(n - SPLIT_NORMAL_RATE) < 0.000001) return 0;
+  if (Math.abs(n - SPLIT_DINERS_RATE) < 0.000001) return 1;
+  return 2 + n;
+}
+
+function typeSlices(days) {
+  const bag = new Map();
+  days.forEach(day => day.byType.forEach((value, key) => {
+    bag.set(key, (bag.get(key) || 0) + value);
+  }));
+  return [...bag.entries()]
+    .filter(([, value]) => value > 0)
+    .sort((a, b) => typeRank(a[0]) - typeRank(b[0]))
+    .map(([key, value], index) => ({
+      key,
+      label:incomeTypeLabel(Number(key)),
+      value:roundMoney(value),
+      color:incomeColor(Number(key), index)
+    }));
+}
+
+function clientSlices(days) {
+  const bag = new Map();
+  const palette = ["#10a99a","#9874e8","#ef9845","#3b82f6","#e05b68","#101c32"];
+  days.forEach(day => day.byClient.forEach((value, key) => {
+    bag.set(key, (bag.get(key) || 0) + value);
+  }));
+  return [...bag.entries()]
+    .filter(([, value]) => value > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, value], index) => ({
+      label,
+      value:roundMoney(value),
+      color:palette[index % palette.length]
+    }));
+}
+
+function chartCard(host, title, note) {
+  const card = document.createElement("article");
+  card.className = "chart-card";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  const text = document.createElement("p");
+  text.className = "chart-note";
+  text.textContent = note;
+  const body = document.createElement("div");
+  body.className = "chart-body";
+  card.append(heading, text, body);
+  host.appendChild(card);
+  return body;
+}
+
+function emptyChart(body, text) {
+  const note = document.createElement("p");
+  note.className = "empty";
+  note.textContent = text;
+  body.appendChild(note);
+}
+
+function legendRow(slices) {
+  const row = document.createElement("div");
+  row.className = "chart-legend";
+  slices.forEach(slice => {
+    const item = document.createElement("span");
+    const swatch = document.createElement("i");
+    swatch.style.background = slice.color;
+    item.append(swatch, document.createTextNode(slice.label));
+    row.appendChild(item);
+  });
+  return row;
+}
+
+function makeSvg(width, height) {
+  const svg = svgEl("svg", {viewBox:"0 0 " + width + " " + height, class:"chart-svg"});
+  if (width > 340) svg.style.minWidth = Math.min(width, 960) + "px";
+  return svg;
+}
+
+function dayX(count, index, width) {
+  if (count < 2) return width / 2;
+  return 16 + index * ((width - 32) / (count - 1));
+}
+
+function drawVertical(body, days) {
+  if (!days.length) return emptyChart(body, "Sin movimientos.");
+  const slot = 42;
+  const width = Math.max(320, days.length * slot + 20);
+  const svg = makeSvg(width, 200);
+  const max = Math.max(...days.map(day => day.deposit), 1);
+  const base = 168;
+  days.forEach((day, index) => {
+    const h = Math.max(3, (day.deposit / max) * 142);
+    const x = 14 + index * slot;
+    svg.appendChild(svgEl("rect", {x, y:base - h, width:26, height:h, rx:6, fill:"#3b82f6"}));
+    const label = svgEl("text", {x:x + 13, y:186, "text-anchor":"middle", fill:"var(--muted)", "font-size":"11"});
+    label.textContent = day.label;
+    svg.appendChild(label);
+  });
+  body.appendChild(svg);
+}
+
+function drawStacked(body, days) {
+  if (!days.length) return emptyChart(body, "Sin movimientos.");
+  const types = typeSlices(days);
+  if (!types.length) return emptyChart(body, "Sin depósitos.");
+  const slot = 42;
+  const width = Math.max(320, days.length * slot + 20);
+  const svg = makeSvg(width, 200);
+  const max = Math.max(...days.map(day => day.deposit), 1);
+  const base = 168;
+  days.forEach((day, index) => {
+    let y = base;
+    const x = 14 + index * slot;
+    types.forEach(type => {
+      const value = day.byType.get(type.key) || 0;
+      if (value <= 0) return;
+      const h = (value / max) * 142;
+      y -= h;
+      svg.appendChild(svgEl("rect", {x, y, width:26, height:Math.max(h, 0.6), fill:type.color}));
+    });
+    const label = svgEl("text", {x:x + 13, y:186, "text-anchor":"middle", fill:"var(--muted)", "font-size":"11"});
+    label.textContent = day.label;
+    svg.appendChild(label);
+  });
+  body.appendChild(svg);
+  body.appendChild(legendRow(types));
+}
+
+function drawArea(body, days) {
+  if (!days.length) return emptyChart(body, "Sin movimientos.");
+  const width = Math.max(320, days.length * 42);
+  const svg = makeSvg(width, 200);
+  const max = Math.max(...days.map(day => day.deposit), 1);
+  const base = 168;
+  const points = days.map((day, index) => ({
+    x:dayX(days.length, index, width),
+    y:base - (day.deposit / max) * 142
+  }));
+  const line = points.map((point, index) => (index ? "L" : "M") + point.x.toFixed(1) + " " + point.y.toFixed(1)).join(" ");
+  const area = line + " L " + points[points.length - 1].x.toFixed(1) + " " + base + " L " + points[0].x.toFixed(1) + " " + base + " Z";
+  svg.appendChild(svgEl("path", {d:area, fill:"rgba(59,130,246,.28)"}));
+  svg.appendChild(svgEl("path", {d:line, fill:"none", stroke:"#3b82f6", "stroke-width":"2.5"}));
+  points.forEach(point => {
+    svg.appendChild(svgEl("circle", {cx:point.x.toFixed(1), cy:point.y.toFixed(1), r:4, fill:"#3b82f6"}));
+  });
+  days.forEach((day, index) => {
+    if (days.length > 12 && index % 2) return;
+    const label = svgEl("text", {x:points[index].x, y:186, "text-anchor":"middle", fill:"var(--muted)", "font-size":"11"});
+    label.textContent = day.label;
+    svg.appendChild(label);
+  });
+  body.appendChild(svg);
+}
+
+function drawLines(body, days) {
+  if (!days.length) return emptyChart(body, "Sin movimientos.");
+  const width = Math.max(320, days.length * 42);
+  const svg = makeSvg(width, 200);
+  const max = Math.max(...days.map(day => Math.max(day.sales, day.commission, day.deposit)), 1);
+  const base = 158;
+  const series = [
+    {field:"sales", color:"#10a99a", label:"Ventas"},
+    {field:"deposit", color:"#3b82f6", label:"Depósito"},
+    {field:"commission", color:"#ef9845", label:"Comisión"}
+  ];
+  series.forEach(item => {
+    const points = days.map((day, index) => ({
+      x:dayX(days.length, index, width),
+      y:base - (Number(day[item.field]) / max) * 132
+    }));
+    const line = points.map((point, index) => (index ? "L" : "M") + point.x.toFixed(1) + " " + point.y.toFixed(1)).join(" ");
+    svg.appendChild(svgEl("path", {d:line, fill:"none", stroke:item.color, "stroke-width":"2.5"}));
+    points.forEach(point => {
+      svg.appendChild(svgEl("circle", {cx:point.x.toFixed(1), cy:point.y.toFixed(1), r:3.5, fill:item.color}));
+    });
+  });
+  days.forEach((day, index) => {
+    if (days.length > 12 && index % 2) return;
+    const label = svgEl("text", {x:dayX(days.length, index, width), y:186, "text-anchor":"middle", fill:"var(--muted)", "font-size":"11"});
+    label.textContent = day.label;
+    svg.appendChild(label);
+  });
+  body.appendChild(svg);
+  body.appendChild(legendRow(series));
+}
+
+function drawHistogram(body, sales) {
+  if (!sales.length) return emptyChart(body, "Sin ventas.");
+  const edges = [0, 100, 300, 500, 1000, 2000, Infinity];
+  const labels = ["0-100","100-300","300-500","500-1 mil","1-2 mil","2 mil+"];
+  const counts = edges.slice(0, -1).map(() => 0);
+  sales.forEach(sale => {
+    const amount = Number(sale.amount) || 0;
+    const index = edges.findIndex((edge, i) => amount >= edge && amount < edges[i + 1]);
+    if (index >= 0) counts[index] += 1;
+  });
+  const svg = makeSvg(340, 200);
+  const max = Math.max(...counts, 1);
+  const base = 168;
+  counts.forEach((count, index) => {
+    const h = count ? Math.max(4, (count / max) * 132) : 0;
+    const x = 18 + index * 54;
+    if (h) svg.appendChild(svgEl("rect", {x, y:base - h, width:38, height:h, rx:6, fill:"#9874e8"}));
+    const n = svgEl("text", {x:x + 19, y:base - h - 6, "text-anchor":"middle", fill:"var(--text)", "font-size":"12", "font-weight":"700"});
+    n.textContent = String(count);
+    svg.appendChild(n);
+    const label = svgEl("text", {x:x + 19, y:186, "text-anchor":"middle", fill:"var(--muted)", "font-size":"10"});
+    label.textContent = labels[index];
+    svg.appendChild(label);
+  });
+  body.appendChild(svg);
+}
+
+function drawFunnel(body, sold, deposit, bank) {
+  const steps = [
+    {label:"Vendido " + money(sold), value:sold, color:"#10a99a"},
+    {label:"Depósito " + money(deposit), value:deposit, color:"#3b82f6"},
+    {label:bank == null ? "Banco · sin registro" : "Banco " + money(bank), value:bank == null ? 0 : bank, color:"#9874e8"}
+  ];
+  const max = Math.max(sold, deposit, bank || 0, 1);
+  const wrap = document.createElement("div");
+  wrap.className = "funnel";
+  steps.forEach(step => {
+    const row = document.createElement("div");
+    row.className = "funnel-step";
+    row.style.width = Math.max(step.value > 0 ? 34 : 46, Math.round((Math.max(step.value, 0) / max) * 100)) + "%";
+    row.style.background = step.color;
+    row.textContent = step.label;
+    wrap.appendChild(row);
+  });
+  body.appendChild(wrap);
+}
+
+function polar(cx, cy, r, angle) {
+  return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+}
+
+function drawPie(body, slices, donut) {
+  if (!slices.length) return emptyChart(body, "Sin depósitos.");
+  const svg = makeSvg(220, 180);
+  const cx = 110, cy = 90, r = 72;
+  const total = slices.reduce((sum, slice) => sum + slice.value, 0) || 1;
+  if (slices.length === 1) {
+    svg.appendChild(svgEl("circle", {cx, cy, r, fill:slices[0].color}));
+  } else {
+    let angle = -Math.PI / 2;
+    slices.forEach(slice => {
+      const sweep = (slice.value / total) * Math.PI * 2;
+      const start = polar(cx, cy, r, angle);
+      angle += sweep;
+      const end = polar(cx, cy, r, angle);
+      const large = sweep > Math.PI ? 1 : 0;
+      svg.appendChild(svgEl("path", {
+        d:"M " + cx + " " + cy + " L " + start[0].toFixed(2) + " " + start[1].toFixed(2) + " A " + r + " " + r + " 0 " + large + " 1 " + end[0].toFixed(2) + " " + end[1].toFixed(2) + " Z",
+        fill:slice.color
+      }));
+    });
+  }
+  if (donut) {
+    svg.appendChild(svgEl("circle", {cx, cy, r:42, fill:"var(--card)"}));
+    const text = svgEl("text", {x:cx, y:cy + 5, "text-anchor":"middle", fill:"var(--text)", "font-size":"13", "font-weight":"800"});
+    text.textContent = money(total);
+    svg.appendChild(text);
+  }
+  body.appendChild(svg);
+  body.appendChild(legendRow(slices.map(slice => ({
+    label:slice.label + " · " + money(slice.value),
+    color:slice.color
+  }))));
+}
+
+function drawRadial(body, percent) {
+  const svg = makeSvg(320, 180);
+  const p = Math.max(0, Math.min(100, percent));
+  const cx = 160, cy = 90, r = 62;
+  const length = 2 * Math.PI * r;
+  svg.appendChild(svgEl("circle", {cx, cy, r, fill:"none", stroke:"var(--line)", "stroke-width":"14"}));
+  svg.appendChild(svgEl("circle", {
+    cx, cy, r, fill:"none", stroke:"#10a99a", "stroke-width":"14", "stroke-linecap":"round",
+    "stroke-dasharray":(length * p / 100).toFixed(2) + " " + length.toFixed(2),
+    transform:"rotate(-90 " + cx + " " + cy + ")"
+  }));
+  const text = svgEl("text", {x:cx, y:cy + 8, "text-anchor":"middle", fill:"var(--text)", "font-size":"28", "font-weight":"800"});
+  text.textContent = Math.round(p) + "%";
+  svg.appendChild(text);
+  body.appendChild(svg);
+}
+
+function gaugeArc(cx, cy, r, from, to) {
+  const start = polar(cx, cy, r, from);
+  const end = polar(cx, cy, r, to);
+  const large = to - from > Math.PI ? 1 : 0;
+  return "M " + start[0].toFixed(2) + " " + start[1].toFixed(2) + " A " + r + " " + r + " 0 " + large + " 1 " + end[0].toFixed(2) + " " + end[1].toFixed(2);
+}
+
+function drawGauge(body, percent) {
+  const p = Math.max(0, Math.min(100, percent));
+  const svg = makeSvg(320, 170);
+  const cx = 160, cy = 112, r = 78;
+  svg.appendChild(svgEl("path", {d:gaugeArc(cx, cy, r, Math.PI, Math.PI * 2), fill:"none", stroke:"var(--line)", "stroke-width":"16", "stroke-linecap":"round"}));
+  const end = Math.PI + Math.PI * (p / 100);
+  if (p > 0.5) {
+    svg.appendChild(svgEl("path", {d:gaugeArc(cx, cy, r, Math.PI, end), fill:"none", stroke:"#ef9845", "stroke-width":"16", "stroke-linecap":"round"}));
+  }
+  const tip = polar(cx, cy, r - 30, end);
+  svg.appendChild(svgEl("line", {x1:cx, y1:cy, x2:tip[0].toFixed(1), y2:tip[1].toFixed(1), stroke:"var(--text)", "stroke-width":"3", "stroke-linecap":"round"}));
+  svg.appendChild(svgEl("circle", {cx, cy, r:5, fill:"var(--text)"}));
+  const text = svgEl("text", {x:cx, y:cy - 18, "text-anchor":"middle", fill:"var(--text)", "font-size":"26", "font-weight":"800"});
+  text.textContent = Math.round(p) + "%";
+  svg.appendChild(text);
+  body.appendChild(svg);
+}
+
+function drawProgress(body, slices) {
+  if (!slices.length) return emptyChart(body, "Sin depósitos.");
+  const total = slices.reduce((sum, slice) => sum + slice.value, 0) || 1;
+  slices.forEach(slice => {
+    const row = document.createElement("div");
+    row.className = "progress-row";
+    const name = document.createElement("span");
+    name.textContent = slice.label;
+    const track = document.createElement("div");
+    track.className = "progress-track";
+    const fill = document.createElement("div");
+    fill.className = "progress-fill";
+    fill.style.width = Math.max(2, (slice.value / total) * 100) + "%";
+    fill.style.background = slice.color;
+    track.appendChild(fill);
+    const value = document.createElement("b");
+    value.textContent = money(slice.value);
+    row.append(name, track, value);
+    body.appendChild(row);
+  });
+}
+
+function drawScatter(body, sales) {
+  if (!sales.length) return emptyChart(body, "Sin ventas.");
+  const width = 320, height = 200, left = 36, right = 12, top = 16, base = 168;
+  const svg = makeSvg(width, height);
+  const maxX = Math.max(...sales.map(sale => Number(sale.amount) || 0), 1);
+  const maxY = Math.max(...sales.map(sale => Number(sale.deposit ?? sale.net) || 0), 1);
+  svg.appendChild(svgEl("line", {x1:left, y1:base, x2:width - right, y2:base, stroke:"var(--line)"}));
+  svg.appendChild(svgEl("line", {x1:left, y1:top, x2:left, y2:base, stroke:"var(--line)"}));
+  sales.forEach(sale => {
+    const amount = Number(sale.amount) || 0;
+    const deposit = Number(sale.deposit ?? sale.net) || 0;
+    const x = left + (amount / maxX) * (width - right - left);
+    const y = base - (deposit / maxY) * (base - top);
+    const rate = sale.split && sale.split.special ? sale.split.special.rate : sale.rate;
+    const dot = svgEl("circle", {
+      cx:x.toFixed(1), cy:y.toFixed(1), r:"5", fill:incomeColor(rate, 2), "fill-opacity":"0.9"
+    });
+    const title = svgEl("title", {});
+    title.textContent = (sale.client || "") + " · " + money(amount) + " → " + money(deposit);
+    dot.appendChild(title);
+    svg.appendChild(dot);
+  });
+  const xLabel = svgEl("text", {x:width - right, y:188, "text-anchor":"end", fill:"var(--muted)", "font-size":"11"});
+  xLabel.textContent = "Monto";
+  const yLabel = svgEl("text", {x:2, y:14, fill:"var(--muted)", "font-size":"11"});
+  yLabel.textContent = "Depósito";
+  svg.append(xLabel, yLabel);
+  body.appendChild(svg);
+}
+
+function renderCharts() {
+  const host = $("chartGrid");
+  if (!host) return;
+  host.innerHTML = "";
+  const move = chartMovements();
+  const days = move.days;
+  const sales = move.sales;
+  const sold = roundMoney(days.reduce((sum, day) => sum + day.sales, 0));
+  const deposit = roundMoney(days.reduce((sum, day) => sum + day.deposit, 0));
+  const commission = roundMoney(days.reduce((sum, day) => sum + day.commission, 0));
+  const withBank = days.filter(day => day.bank != null);
+  const bank = withBank.length ? roundMoney(withBank.reduce((sum, day) => sum + day.bank, 0)) : null;
+  const types = typeSlices(days);
+  const clients = clientSlices(days);
+  const keep = sold > 0 ? (deposit / sold) * 100 : 0;
+  const covered = deposit > 0 && bank != null ? (bank / deposit) * 100 : 0;
+
+  drawVertical(chartCard(host, "Gráfico de barras verticales", "Depósito que ingresa cada día. Total " + money(deposit) + "."), days);
+  drawStacked(chartCard(host, "Gráfico de barras apiladas", "El mismo depósito, separado por tipo de comisión."), days);
+  drawArea(chartCard(host, "Gráfico de área", "Cómo sube y baja el depósito de un día a otro."), days);
+  drawHistogram(chartCard(host, "Histograma", "Cuántas ventas caen en cada rango de monto. " + sales.length + (sales.length === 1 ? " venta." : " ventas.")), sales);
+  const funnel = chartCard(host, "Gráfico de embudo", bank == null ? "De lo vendido al depósito. El banco entra cuando lo anotas en el historial." : "De lo vendido al depósito y a lo anotado en el banco.");
+  if (!days.length) emptyChart(funnel, "Sin movimientos.");
+  else drawFunnel(funnel, sold, deposit, bank);
+  drawLines(chartCard(host, "Gráfico lineal", "Ventas " + money(sold) + " · comisión " + money(commission) + " · depósito " + money(deposit) + "."), days);
+  drawPie(chartCard(host, "Gráfico circular", "Parte del depósito de cada cliente."), clients, false);
+  drawPie(chartCard(host, "Gráfico de anillo", "Parte del depósito de cada tipo de comisión."), types, true);
+  const radial = chartCard(host, "Progreso radial", "Porcentaje del monto que queda después de la comisión.");
+  if (!days.length) emptyChart(radial, "Sin movimientos.");
+  else drawRadial(radial, keep);
+  const gauge = chartCard(host, "Disco de progreso", bank == null ? "Aún no hay montos de banco. Se llena cuando los anotas en el historial." : "Del depósito, lo que ya anotaste como ingresado en el banco.");
+  if (!days.length) emptyChart(gauge, "Sin movimientos.");
+  else drawGauge(gauge, covered);
+  drawProgress(chartCard(host, "Barra de progreso", "Peso de cada cliente dentro del depósito total."), clients);
+  drawScatter(chartCard(host, "Diagrama de dispersión", "Cada punto es una venta: a la derecha el monto, arriba el depósito."), sales);
+}
 
 function renderHistory() {
   const target = $("historyList");
@@ -2802,6 +3356,7 @@ function render() {
 
   renderClientSummary(sales);
   renderBreakdown(sales,$("closingBreakdown"));
+  renderCharts();
   renderHistory();
   refreshOpenDetail();
 }
@@ -3016,12 +3571,13 @@ function showPage(page) {
   const colors = {
     register:"#10a99a",
     closing:"#ef9845",
+    charts:"#3b82f6",
     history:"#9874e8"
   };
 
   document.documentElement.style.setProperty("--accent",colors[page]);
 
-  ["register","closing","history"].forEach(name => {
+  ["register","closing","charts","history"].forEach(name => {
     $(name+"Page").classList.toggle("hidden",name !== page);
   });
 
@@ -3029,6 +3585,7 @@ function showPage(page) {
     button.classList.toggle("active",button.dataset.page === page);
   });
 
+  localStorage.setItem(PAGE_KEY, page);
   render();
 }
 
@@ -3046,6 +3603,7 @@ $("themeButton").addEventListener("click",() => {
   const dark = !document.body.classList.contains("dark");
   localStorage.setItem(THEME_KEY,String(dark));
   applyTheme();
+  renderCharts();
 });
 
 $("showPassword").addEventListener("click",() => {
@@ -3060,6 +3618,8 @@ function showApp() {
   $("accountLabel").textContent = currentUser;
   applyTheme();
   render();
+  const savedPage = localStorage.getItem(PAGE_KEY);
+  if (savedPage === "closing" || savedPage === "charts" || savedPage === "history") showPage(savedPage);
   scheduleAutoClose();
   startSync();
 }
