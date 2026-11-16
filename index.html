@@ -205,6 +205,17 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
 .chart-note {margin:0 0 8px;color:var(--muted);font-size:15px}
 .chart-body {min-height:160px;overflow-x:auto}
 .chart-svg {width:100%;height:200px;display:block}
+.chart-svg text {pointer-events:none}
+.chart-tip {
+  position:fixed;z-index:40;display:none;pointer-events:none;
+  background:#17243a;color:#fff;border-radius:8px;padding:8px 10px;
+  font-size:13px;font-weight:700;line-height:1.45;
+  box-shadow:0 8px 24px rgba(16,28,50,.28);max-width:280px;
+}
+.chart-tip.on {display:block}
+.chart-tip-title {font-weight:800;margin-bottom:2px}
+.chart-tip-line {display:flex;align-items:center;gap:6px}
+.chart-tip i {width:8px;height:8px;border-radius:2px;flex:0 0 auto}
 .chart-legend {display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px}
 .chart-legend span {display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
 .chart-legend i {width:10px;height:10px;border-radius:3px;display:inline-block;flex:0 0 auto}
@@ -2797,6 +2808,88 @@ function makeSvg(width, height) {
   return svg;
 }
 
+function chartTipNode() {
+  let tip = document.getElementById("chartTip");
+  if (tip) return tip;
+  tip = document.createElement("div");
+  tip.id = "chartTip";
+  tip.className = "chart-tip";
+  document.body.appendChild(tip);
+  return tip;
+}
+
+function paintChartTip(lines) {
+  const tip = chartTipNode();
+  tip.replaceChildren();
+  lines.forEach((line, index) => {
+    const row = document.createElement("div");
+    row.className = index === 0 ? "chart-tip-title" : "chart-tip-line";
+    if (line.color) {
+      const swatch = document.createElement("i");
+      swatch.style.background = line.color;
+      row.appendChild(swatch);
+    }
+    row.appendChild(document.createTextNode(line.text));
+    tip.appendChild(row);
+  });
+}
+
+function placeChartTip(event) {
+  const tip = chartTipNode();
+  tip.classList.add("on");
+  const box = tip.getBoundingClientRect();
+  let x = event.clientX + 14;
+  let y = event.clientY + 16;
+  if (x + box.width > window.innerWidth - 8) x = event.clientX - box.width - 14;
+  if (y + box.height > window.innerHeight - 8) y = event.clientY - box.height - 12;
+  tip.style.left = Math.max(8, x) + "px";
+  tip.style.top = Math.max(8, y) + "px";
+}
+
+function showChartTip(event, lines) {
+  paintChartTip(lines);
+  placeChartTip(event);
+}
+
+function hideChartTip() {
+  const tip = document.getElementById("chartTip");
+  if (tip) tip.classList.remove("on");
+}
+
+function tipOn(node, lines) {
+  node.style.cursor = "pointer";
+  const read = () => typeof lines === "function" ? lines() : lines;
+  node.addEventListener("pointerenter", event => showChartTip(event, read()));
+  node.addEventListener("pointermove", event => {
+    const tip = document.getElementById("chartTip");
+    if (!tip || !tip.classList.contains("on")) showChartTip(event, read());
+    else placeChartTip(event);
+  });
+  node.addEventListener("pointerleave", hideChartTip);
+}
+
+function shareText(part, total) {
+  if (!total) return "0%";
+  return Math.round((part / total) * 100) + "%";
+}
+
+function dayHeading(day) {
+  return (day.live ? "Hoy · " : "") + prettyDay(day.day);
+}
+
+function dayLines(day) {
+  const lines = [
+    {text:dayHeading(day)},
+    {color:"#10a99a", text:"Ventas: " + money(day.sales)},
+    {color:"#ef9845", text:"Comisión: " + money(day.commission)},
+    {color:"#3b82f6", text:"Depósito: " + money(day.deposit)}
+  ];
+  if (day.bank != null) lines.push({color:"#9874e8", text:"Banco: " + money(day.bank)});
+  const count = (day.list || []).length;
+  lines.push({text:count + (count === 1 ? " venta" : " ventas")});
+  return lines;
+}
+
 function dayX(count, index, width) {
   if (count < 2) return width / 2;
   return 16 + index * ((width - 32) / (count - 1));
@@ -2812,7 +2905,12 @@ function drawVertical(body, days) {
   days.forEach((day, index) => {
     const h = Math.max(3, (day.deposit / max) * 142);
     const x = 14 + index * slot;
-    svg.appendChild(svgEl("rect", {x, y:base - h, width:26, height:h, rx:6, fill:"#3b82f6"}));
+    const bar = svgEl("rect", {x, y:base - h, width:26, height:h, rx:6, fill:"#3b82f6"});
+    bar.style.pointerEvents = "none";
+    svg.appendChild(bar);
+    const hit = svgEl("rect", {x:x - 4, y:16, width:34, height:base - 16, fill:"transparent"});
+    tipOn(hit, dayLines(day));
+    svg.appendChild(hit);
     const label = svgEl("text", {x:x + 13, y:186, "text-anchor":"middle", fill:"var(--muted)", "font-size":"11"});
     label.textContent = day.label;
     svg.appendChild(label);
@@ -2837,7 +2935,13 @@ function drawStacked(body, days) {
       if (value <= 0) return;
       const h = (value / max) * 142;
       y -= h;
-      svg.appendChild(svgEl("rect", {x, y, width:26, height:Math.max(h, 0.6), fill:type.color}));
+      const piece = svgEl("rect", {x, y, width:26, height:Math.max(h, 0.6), fill:type.color});
+      tipOn(piece, [
+        {text:dayHeading(day)},
+        {color:type.color, text:type.label + ": " + money(value)},
+        {text:"Depósito del día: " + money(day.deposit)}
+      ]);
+      svg.appendChild(piece);
     });
     const label = svgEl("text", {x:x + 13, y:186, "text-anchor":"middle", fill:"var(--muted)", "font-size":"11"});
     label.textContent = day.label;
@@ -2861,8 +2965,10 @@ function drawArea(body, days) {
   const area = line + " L " + points[points.length - 1].x.toFixed(1) + " " + base + " L " + points[0].x.toFixed(1) + " " + base + " Z";
   svg.appendChild(svgEl("path", {d:area, fill:"rgba(59,130,246,.28)"}));
   svg.appendChild(svgEl("path", {d:line, fill:"none", stroke:"#3b82f6", "stroke-width":"2.5"}));
-  points.forEach(point => {
-    svg.appendChild(svgEl("circle", {cx:point.x.toFixed(1), cy:point.y.toFixed(1), r:4, fill:"#3b82f6"}));
+  points.forEach((point, index) => {
+    const dot = svgEl("circle", {cx:point.x.toFixed(1), cy:point.y.toFixed(1), r:8, fill:"#3b82f6"});
+    tipOn(dot, dayLines(days[index]));
+    svg.appendChild(dot);
   });
   days.forEach((day, index) => {
     if (days.length > 12 && index % 2) return;
@@ -2891,8 +2997,16 @@ function drawLines(body, days) {
     }));
     const line = points.map((point, index) => (index ? "L" : "M") + point.x.toFixed(1) + " " + point.y.toFixed(1)).join(" ");
     svg.appendChild(svgEl("path", {d:line, fill:"none", stroke:item.color, "stroke-width":"2.5"}));
-    points.forEach(point => {
-      svg.appendChild(svgEl("circle", {cx:point.x.toFixed(1), cy:point.y.toFixed(1), r:3.5, fill:item.color}));
+    points.forEach((point, index) => {
+      const dot = svgEl("circle", {cx:point.x.toFixed(1), cy:point.y.toFixed(1), r:7, fill:item.color});
+      tipOn(dot, [
+        {text:dayHeading(days[index])},
+        {color:item.color, text:item.label + ": " + money(days[index][item.field])},
+        {color:"#10a99a", text:"Ventas: " + money(days[index].sales)},
+        {color:"#3b82f6", text:"Depósito: " + money(days[index].deposit)},
+        {color:"#ef9845", text:"Comisión: " + money(days[index].commission)}
+      ]);
+      svg.appendChild(dot);
     });
   });
   days.forEach((day, index) => {
@@ -2921,7 +3035,17 @@ function drawHistogram(body, sales) {
   counts.forEach((count, index) => {
     const h = count ? Math.max(4, (count / max) * 132) : 0;
     const x = 18 + index * 54;
-    if (h) svg.appendChild(svgEl("rect", {x, y:base - h, width:38, height:h, rx:6, fill:"#9874e8"}));
+    if (h) {
+      const bar = svgEl("rect", {x, y:base - h, width:38, height:h, rx:6, fill:"#9874e8"});
+      bar.style.pointerEvents = "none";
+      svg.appendChild(bar);
+    }
+    const slot = svgEl("rect", {x, y:20, width:38, height:base - 20, fill:"transparent"});
+    tipOn(slot, [
+      {text:"Monto " + labels[index]},
+      {color:"#9874e8", text:count + (count === 1 ? " venta" : " ventas")}
+    ]);
+    svg.appendChild(slot);
     const n = svgEl("text", {x:x + 19, y:base - h - 6, "text-anchor":"middle", fill:"var(--text)", "font-size":"12", "font-weight":"700"});
     n.textContent = String(count);
     svg.appendChild(n);
@@ -2947,6 +3071,13 @@ function drawFunnel(body, sold, deposit, bank) {
     row.style.width = Math.max(step.value > 0 ? 34 : 46, Math.round((Math.max(step.value, 0) / max) * 100)) + "%";
     row.style.background = step.color;
     row.textContent = step.label;
+    const detail = step.color === "#9874e8" && bank == null
+      ? "Todavía no hay monto de banco"
+      : shareText(step.value, sold) + " de lo vendido";
+    tipOn(row, [
+      {color:step.color, text:step.label},
+      {text:detail}
+    ]);
     wrap.appendChild(row);
   });
   body.appendChild(wrap);
@@ -2961,8 +3092,14 @@ function drawPie(body, slices, donut) {
   const svg = makeSvg(220, 180);
   const cx = 110, cy = 90, r = 72;
   const total = slices.reduce((sum, slice) => sum + slice.value, 0) || 1;
+  const sliceLines = slice => [
+    {color:slice.color, text:slice.label},
+    {text:money(slice.value) + " · " + shareText(slice.value, total)}
+  ];
   if (slices.length === 1) {
-    svg.appendChild(svgEl("circle", {cx, cy, r, fill:slices[0].color}));
+    const whole = svgEl("circle", {cx, cy, r, fill:slices[0].color});
+    tipOn(whole, sliceLines(slices[0]));
+    svg.appendChild(whole);
   } else {
     let angle = -Math.PI / 2;
     slices.forEach(slice => {
@@ -2971,14 +3108,18 @@ function drawPie(body, slices, donut) {
       angle += sweep;
       const end = polar(cx, cy, r, angle);
       const large = sweep > Math.PI ? 1 : 0;
-      svg.appendChild(svgEl("path", {
+      const wedge = svgEl("path", {
         d:"M " + cx + " " + cy + " L " + start[0].toFixed(2) + " " + start[1].toFixed(2) + " A " + r + " " + r + " 0 " + large + " 1 " + end[0].toFixed(2) + " " + end[1].toFixed(2) + " Z",
         fill:slice.color
-      }));
+      });
+      tipOn(wedge, sliceLines(slice));
+      svg.appendChild(wedge);
     });
   }
   if (donut) {
-    svg.appendChild(svgEl("circle", {cx, cy, r:42, fill:"var(--card)"}));
+    const hole = svgEl("circle", {cx, cy, r:42, fill:"var(--card)"});
+    hole.style.pointerEvents = "none";
+    svg.appendChild(hole);
     const text = svgEl("text", {x:cx, y:cy + 5, "text-anchor":"middle", fill:"var(--text)", "font-size":"13", "font-weight":"800"});
     text.textContent = money(total);
     svg.appendChild(text);
@@ -2990,7 +3131,7 @@ function drawPie(body, slices, donut) {
   }))));
 }
 
-function drawRadial(body, percent) {
+function drawRadial(body, percent, lines) {
   const svg = makeSvg(320, 180);
   const p = Math.max(0, Math.min(100, percent));
   const cx = 160, cy = 90, r = 62;
@@ -3004,6 +3145,7 @@ function drawRadial(body, percent) {
   const text = svgEl("text", {x:cx, y:cy + 8, "text-anchor":"middle", fill:"var(--text)", "font-size":"28", "font-weight":"800"});
   text.textContent = Math.round(p) + "%";
   svg.appendChild(text);
+  if (lines) tipOn(svg, lines);
   body.appendChild(svg);
 }
 
@@ -3014,7 +3156,7 @@ function gaugeArc(cx, cy, r, from, to) {
   return "M " + start[0].toFixed(2) + " " + start[1].toFixed(2) + " A " + r + " " + r + " 0 " + large + " 1 " + end[0].toFixed(2) + " " + end[1].toFixed(2);
 }
 
-function drawGauge(body, percent) {
+function drawGauge(body, percent, lines) {
   const p = Math.max(0, Math.min(100, percent));
   const svg = makeSvg(320, 170);
   const cx = 160, cy = 112, r = 78;
@@ -3029,6 +3171,7 @@ function drawGauge(body, percent) {
   const text = svgEl("text", {x:cx, y:cy - 18, "text-anchor":"middle", fill:"var(--text)", "font-size":"26", "font-weight":"800"});
   text.textContent = Math.round(p) + "%";
   svg.appendChild(text);
+  if (lines) tipOn(svg, lines);
   body.appendChild(svg);
 }
 
@@ -3050,6 +3193,10 @@ function drawProgress(body, slices) {
     const value = document.createElement("b");
     value.textContent = money(slice.value);
     row.append(name, track, value);
+    tipOn(row, [
+      {color:slice.color, text:slice.label},
+      {text:money(slice.value) + " · " + shareText(slice.value, total)}
+    ]);
     body.appendChild(row);
   });
 }
@@ -3068,12 +3215,17 @@ function drawScatter(body, sales) {
     const x = left + (amount / maxX) * (width - right - left);
     const y = base - (deposit / maxY) * (base - top);
     const rate = sale.split && sale.split.special ? sale.split.special.rate : sale.rate;
+    const color = incomeColor(rate, 2);
     const dot = svgEl("circle", {
-      cx:x.toFixed(1), cy:y.toFixed(1), r:"5", fill:incomeColor(rate, 2), "fill-opacity":"0.9"
+      cx:x.toFixed(1), cy:y.toFixed(1), r:"7", fill:color, "fill-opacity":"0.9"
     });
-    const title = svgEl("title", {});
-    title.textContent = (sale.client || "") + " · " + money(amount) + " → " + money(deposit);
-    dot.appendChild(title);
+    tipOn(dot, [
+      {text:(sale.client || "Sin cliente") + (sale.reference ? " · " + sale.reference : "")},
+      {color, text:sale.card || incomeTypeLabel(Number(rate) || 0)},
+      {text:"Monto: " + money(amount)},
+      {text:"Comisión: " + money(sale.commission)},
+      {text:"Depósito: " + money(deposit)}
+    ]);
     svg.appendChild(dot);
   });
   const xLabel = svgEl("text", {x:width - right, y:188, "text-anchor":"end", fill:"var(--muted)", "font-size":"11"});
@@ -3113,10 +3265,18 @@ function renderCharts() {
   drawPie(chartCard(host, "Gráfico de anillo", "Parte del depósito de cada tipo de comisión."), types, true);
   const radial = chartCard(host, "Progreso radial", "Porcentaje del monto que queda después de la comisión.");
   if (!days.length) emptyChart(radial, "Sin movimientos.");
-  else drawRadial(radial, keep);
+  else drawRadial(radial, keep, [
+    {text:"Después de la comisión"},
+    {color:"#10a99a", text:Math.round(keep) + "% queda"},
+    {text:"Depósito " + money(deposit) + " de " + money(sold)}
+  ]);
   const gauge = chartCard(host, "Disco de progreso", bank == null ? "Aún no hay montos de banco. Se llena cuando los anotas en el historial." : "Del depósito, lo que ya anotaste como ingresado en el banco.");
   if (!days.length) emptyChart(gauge, "Sin movimientos.");
-  else drawGauge(gauge, covered);
+  else drawGauge(gauge, covered, [
+    {text:bank == null ? "Banco sin registro" : "Anotado en el banco"},
+    {color:"#ef9845", text:Math.round(covered) + "% del depósito"},
+    {text:(bank == null ? "Banco S/ 0.00" : "Banco " + money(bank)) + " de " + money(deposit)}
+  ]);
   drawProgress(chartCard(host, "Barra de progreso", "Peso de cada cliente dentro del depósito total."), clients);
   drawScatter(chartCard(host, "Diagrama de dispersión", "Cada punto es una venta: a la derecha el monto, arriba el depósito."), sales);
 }
