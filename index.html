@@ -196,9 +196,27 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
 .tab.blue {color:#2563eb;border-color:#c9dbfb}
 .tab.blue.active {background:#3b82f6;border-color:#3b82f6;color:white}
 .chart-lead {margin:0 0 12px}
-.chart-period {display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}
-.chart-period .btn.on {background:#3b82f6}
-.chart-period input {max-width:190px}
+.chart-period {display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 14px}
+.chart-period-tag {
+  display:flex;align-items:center;gap:8px;
+  background:#101c32;border:1px solid rgba(212,175,55,.28);
+  border-radius:10px;padding:8px 12px;
+}
+.chart-period-tag span {font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:#a1aec1;font-weight:700}
+.chart-period-tag strong {color:#d4af37;font-size:14px}
+.chart-pills {display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chart-pills button {
+  border:1px solid rgba(212,175,55,.35);background:transparent;color:#c5cdd8;
+  border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;
+}
+.chart-pills button.on {background:#d4af37;border-color:#d4af37;color:#101c32}
+.chart-period input[type="date"] {
+  background:#101c32;color:#d7deea;color-scheme:dark;
+  border:1px solid rgba(212,175,55,.35);border-radius:10px;
+  padding:8px 10px;font-size:13px;font-weight:700;
+}
+.chart-period input.range {border-color:#d4af37}
+.chart-period-arrow {color:#a1aec1;font-weight:800}
 .chart-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .chart-card {
   background:var(--card);border:1px solid var(--line);border-top:4px solid #3b82f6;
@@ -792,13 +810,22 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <!-- GRÁFICOS -->
     <section id="chartsPage" class="hidden">
       <div class="chart-period">
-        <button type="button" class="btn gray small" data-chart-period="today">Hoy</button>
-        <button type="button" class="btn gray small" data-chart-period="yesterday">Ayer</button>
-        <button type="button" class="btn gray small on" data-chart-period="7">7 días</button>
-        <label for="chartDay">DÍA</label>
-        <input id="chartDay" type="date">
+        <div class="chart-period-tag">
+          <span>Período:</span>
+          <strong id="chartPeriodName">7 días</strong>
+        </div>
+        <div class="chart-pills">
+          <button type="button" data-chart-period="today">Hoy</button>
+          <button type="button" data-chart-period="yesterday">Ayer</button>
+          <button type="button" class="on" data-chart-period="7">7 días</button>
+          <button type="button" data-chart-period="30">30 días</button>
+          <button type="button" data-chart-period="month">Este mes</button>
+          <button type="button" data-chart-period="year">1 año</button>
+        </div>
+        <input id="chartFrom" type="date" aria-label="Desde">
+        <span class="chart-period-arrow">→</span>
+        <input id="chartTo" type="date" aria-label="Hasta">
       </div>
-      <p class="subtitle chart-lead" id="chartPeriodNote">Últimos 7 días.</p>
       <div id="chartGrid" class="chart-grid"></div>
     </section>
 
@@ -2700,7 +2727,8 @@ function svgEl(name, attrs) {
 }
 
 let chartPeriod = "7";
-let chartCustomDay = "";
+let chartFrom = "";
+let chartTo = "";
 
 function blankChartDay(key) {
   const today = businessDay(Date.now());
@@ -2718,33 +2746,67 @@ function blankChartDay(key) {
   };
 }
 
-function periodKeys() {
-  const today = businessDay(Date.now());
-  if (chartPeriod === "today") return [today];
-  if (chartPeriod === "yesterday") return [shiftDayKey(today, -1)];
-  if (chartPeriod === "day" && chartCustomDay && chartCustomDay <= today) return [chartCustomDay];
+function keysBetween(from, to) {
   const keys = [];
-  for (let back = 6; back >= 0; back--) keys.push(shiftDayKey(today, -back));
+  let cursor = from;
+  let guard = 0;
+  while (cursor && cursor <= to && guard < 400) {
+    keys.push(cursor);
+    cursor = shiftDayKey(cursor, 1);
+    guard += 1;
+  }
   return keys;
+}
+
+function periodBounds() {
+  const today = businessDay(Date.now());
+  if (chartPeriod === "today") return [today, today];
+  if (chartPeriod === "yesterday") {
+    const yesterday = shiftDayKey(today, -1);
+    return [yesterday, yesterday];
+  }
+  if (chartPeriod === "30") return [shiftDayKey(today, -29), today];
+  if (chartPeriod === "month") return [today.slice(0, 7) + "-01", today];
+  if (chartPeriod === "year") return [shiftDayKey(today, -364), today];
+  if (chartPeriod === "range" && chartFrom && chartTo && chartFrom <= chartTo && chartTo <= today) return [chartFrom, chartTo];
+  return [shiftDayKey(today, -6), today];
+}
+
+function periodKeys() {
+  const bounds = periodBounds();
+  return keysBetween(bounds[0], bounds[1]);
+}
+
+function periodName() {
+  return {
+    today:"Hoy",
+    yesterday:"Ayer",
+    "7":"7 días",
+    "30":"30 días",
+    month:"Este mes",
+    year:"1 año",
+    range:"Personalizado"
+  }[chartPeriod] || "7 días";
 }
 
 function syncChartPeriod() {
   document.querySelectorAll("[data-chart-period]").forEach(button => {
     button.classList.toggle("on", button.dataset.chartPeriod === chartPeriod);
   });
-  const input = $("chartDay");
+  const bounds = periodBounds();
   const today = businessDay(Date.now());
-  if (input) {
+  ["chartFrom","chartTo"].forEach(id => {
+    const input = $(id);
+    if (!input) return;
     input.max = today;
-    if (chartPeriod === "day") input.value = chartCustomDay;
-  }
-  const keys = periodKeys();
-  const note = $("chartPeriodNote");
-  if (!note || !keys.length) return;
-  if (chartPeriod === "today") note.textContent = "Hoy · " + prettyDay(keys[0]);
-  else if (chartPeriod === "yesterday") note.textContent = "Ayer · " + prettyDay(keys[0]);
-  else if (chartPeriod === "day") note.textContent = "Día elegido · " + prettyDay(keys[0]);
-  else note.textContent = "Últimos 7 días · " + prettyDay(keys[0]) + " al " + prettyDay(keys[keys.length - 1]);
+    input.classList.toggle("range", chartPeriod === "range");
+  });
+  const from = $("chartFrom");
+  const to = $("chartTo");
+  if (from) from.value = bounds[0];
+  if (to) to.value = bounds[1];
+  const name = $("chartPeriodName");
+  if (name) name.textContent = periodName();
 }
 
 function chartMovements() {
@@ -3828,19 +3890,35 @@ document.querySelectorAll("[data-chart-period]").forEach(button => {
     renderCharts();
   });
 });
-$("chartDay").addEventListener("change", () => {
+function applyChartRange() {
   const today = businessDay(Date.now());
-  const value = $("chartDay").value;
-  if (!value || value > today) {
-    chartPeriod = "7";
-    chartCustomDay = "";
-    $("chartDay").value = "";
-  } else {
-    chartPeriod = "day";
-    chartCustomDay = value;
+  let from = $("chartFrom").value;
+  let to = $("chartTo").value;
+  if (from > today) from = today;
+  if (to > today) to = today;
+  if (from && to && from > to) {
+    const swap = from;
+    from = to;
+    to = swap;
+  }
+  if (!from || !to) return;
+  const presets = ["today","yesterday","7","30","month","year"];
+  let matched = "";
+  presets.forEach(preset => {
+    chartPeriod = preset;
+    const bounds = periodBounds();
+    if (bounds[0] === from && bounds[1] === to) matched = preset;
+  });
+  if (matched) chartPeriod = matched;
+  else {
+    chartPeriod = "range";
+    chartFrom = from;
+    chartTo = to;
   }
   renderCharts();
-});
+}
+$("chartFrom").addEventListener("change", applyChartRange);
+$("chartTo").addEventListener("change", applyChartRange);
 
 $("themeButton").addEventListener("click",() => {
   const dark = !document.body.classList.contains("dark");
