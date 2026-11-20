@@ -167,11 +167,11 @@ main {max-width:none;width:100%;margin:12px 0 0;padding:0 20px 24px}
   grid-template-columns:minmax(0,1fr) minmax(320px,1fr);
   grid-template-areas:"fields accounts";
   gap:12px;
-  align-items:stretch;
+  align-items:start;
 }
 .register-split .grid {grid-template-columns:repeat(2,minmax(0,1fr))}
 .sale-fields {grid-area:fields;display:flex;flex-direction:column}
-.sale-fields .grid {flex:1}
+.sale-fields .grid {flex:0 0 auto}
 .sale-fields .btn[type="submit"] {width:100%;margin-top:12px}
 .accounts-panel {grid-area:accounts}
 .sale-close {margin-top:4px}
@@ -372,6 +372,17 @@ input:focus,select:focus {
 .icon-btn.add {font-weight:800;font-size:20px}
 .amount-row {display:flex;gap:8px;align-items:center}
 .amount-row input {flex:1;min-width:0;width:auto}
+.numpad {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+  margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:16px;
+  background:var(--card2);
+}
+.numpad.hidden {display:none}
+.numpad button {
+  min-height:62px;border:1px solid var(--line);border-radius:14px;
+  background:var(--card);color:var(--text);font-size:28px;font-weight:800;cursor:pointer;
+}
+.numpad button:active {background:var(--accent);color:#fff;border-color:var(--accent)}
 .split-btn {width:48px;height:48px;font-weight:800;font-size:24px}
 .split-btn.active {background:var(--accent);border-color:var(--accent);color:#fff}
 .split-note {margin:8px 0 0;font-size:18px;font-weight:700;color:var(--accent);line-height:1.45}
@@ -764,7 +775,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
           <div class="field">
             <label>MONTO DE VENTA (S/)</label>
             <div class="amount-row">
-              <input id="amount" type="number" min="0.01" step="0.01" placeholder="Ej. 500.00" required>
+              <input id="amount" data-money type="text" inputmode="none" readonly placeholder="Ej. 500.00" required>
               <button type="button" class="icon-btn split-btn" id="splitButton" title="Divisor">D</button>
             </div>
             <p id="splitNote" class="split-note hidden"></p>
@@ -925,7 +936,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
       </div>
       <div class="field">
         <label>MONTO (S/)</label>
-        <input id="addAmount" type="number" min="0.01" step="0.01" placeholder="Ej. 500.00" required>
+        <input id="addAmount" data-money type="text" inputmode="none" readonly placeholder="Ej. 500.00" required>
       </div>
       <div class="rate-actions">
         <button class="btn" type="submit">Agregar</button>
@@ -942,7 +953,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <p class="split-total">Total de la venta: <strong id="splitTotal">S/ 0.00</strong></p>
     <div class="field">
       <label>MONTO A PASAR (S/)</label>
-      <input id="splitSpecial" type="number" min="0.01" step="0.01" placeholder="Ej. 100.00">
+      <input id="splitSpecial" data-money type="text" inputmode="none" readonly placeholder="Ej. 100.00">
     </div>
     <div class="field">
       <label>COMISIÓN DE ESE MONTO</label>
@@ -970,7 +981,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <div class="field">
       <label>MONTO DE LA VENTA (S/)</label>
       <div class="amount-row">
-        <input id="editAmount" type="number" min="0.01" step="0.01">
+        <input id="editAmount" data-money type="text" inputmode="none" readonly>
         <button type="button" class="icon-btn split-btn" id="editSplitButton" title="Dividir comisión">D</button>
       </div>
     </div>
@@ -983,7 +994,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
     <div id="editSplit" class="hidden">
       <div class="field">
         <label>MONTO DIVIDIDO (S/)</label>
-        <input id="editSpecialAmount" type="number" min="0.01" step="0.01">
+        <input id="editSpecialAmount" data-money type="text" inputmode="none" readonly>
       </div>
       <div class="field">
         <label>COMISIÓN DE ESE MONTO</label>
@@ -2033,6 +2044,54 @@ $("client").addEventListener("change",() => {
 });
 
 $("amount").addEventListener("input",calculate);
+
+const numpad = document.createElement("div");
+numpad.id = "numpad";
+numpad.className = "numpad hidden";
+numpad.innerHTML = ["1","2","3","4","5","6","7","8","9",".","0","⌫"]
+  .map(key => `<button type="button" data-key="${key === "⌫" ? "back" : key}">${key}</button>`)
+  .join("");
+let moneyTarget = null;
+const showNumpad = input => {
+  moneyTarget = input;
+  const anchor = input.closest(".amount-row") || input;
+  anchor.insertAdjacentElement("afterend", numpad);
+  numpad.classList.remove("hidden");
+};
+const hideNumpad = () => {
+  moneyTarget = null;
+  numpad.classList.add("hidden");
+};
+const writeMoney = key => {
+  if (!moneyTarget) return;
+  let value = moneyTarget.value || "";
+  if (key === "back") value = value.slice(0, -1);
+  else if (key === ".") {
+    if (value.includes(".")) return;
+    value = value ? value + "." : "0.";
+  } else {
+    const parts = value.split(".");
+    if (parts[1] && parts[1].length >= 2) return;
+    if (!parts[1] && parts[0].replace("-", "").length >= 7 && !value.endsWith(".")) return;
+    value = value === "0" ? key : value + key;
+  }
+  moneyTarget.value = value;
+  moneyTarget.dispatchEvent(new Event("input", {bubbles:true}));
+};
+numpad.addEventListener("pointerdown", event => event.preventDefault());
+numpad.addEventListener("pointerup", event => {
+  const key = event.target.closest("[data-key]");
+  if (!key) return;
+  writeMoney(key.dataset.key);
+});
+document.querySelectorAll("[data-money]").forEach(input => {
+  input.addEventListener("focus", () => showNumpad(input));
+  input.addEventListener("click", () => showNumpad(input));
+});
+document.addEventListener("pointerdown", event => {
+  if (event.target.closest("#numpad") || event.target.closest("[data-money]")) return;
+  hideNumpad();
+});
 $("splitButton").addEventListener("click",openSplitModal);
 $("splitCancel").addEventListener("click",closeSplitModal);
 $("splitSpecial").addEventListener("input",renderSplitPreview);
