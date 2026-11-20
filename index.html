@@ -372,17 +372,18 @@ input:focus,select:focus {
 .icon-btn.add {font-weight:800;font-size:20px}
 .amount-row {display:flex;gap:8px;align-items:center}
 .amount-row input {flex:1;min-width:0;width:auto}
-.numpad {
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
-  margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:16px;
-  background:var(--card2);
+.money-display {
+  margin:0 0 12px;padding:14px 16px;text-align:right;
+  font-size:42px;font-weight:800;letter-spacing:.5px;
+  border:1px solid var(--line);border-radius:14px;background:var(--card2);
 }
-.numpad.hidden {display:none}
+.numpad {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .numpad button {
-  min-height:62px;border:1px solid var(--line);border-radius:14px;
-  background:var(--card);color:var(--text);font-size:28px;font-weight:800;cursor:pointer;
+  min-height:68px;border:1px solid var(--line);border-radius:14px;
+  background:var(--card2);color:var(--text);font-size:30px;font-weight:800;cursor:pointer;
 }
 .numpad button:active {background:var(--accent);color:#fff;border-color:var(--accent)}
+.money-card .btn {width:100%;margin-top:12px}
 .split-btn {width:48px;height:48px;font-weight:800;font-size:24px}
 .split-btn.active {background:var(--accent);border-color:var(--accent);color:#fff}
 .split-note {margin:8px 0 0;font-size:18px;font-weight:700;color:var(--accent);line-height:1.45}
@@ -773,7 +774,7 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
           </div>
         <div class="sale-close">
           <div class="field">
-            <label>MONTO DE VENTA (S/)</label>
+            <label id="amountLabel">MONTO DE VENTA (S/)</label>
             <div class="amount-row">
               <input id="amount" data-money type="text" inputmode="none" readonly placeholder="Ej. 500.00" required>
               <button type="button" class="icon-btn split-btn" id="splitButton" title="Divisor">D</button>
@@ -1010,6 +1011,28 @@ body.dark .tab.purple {color:#d2c0ff;border-color:#4a3d72}
       <button class="btn gray" type="button" id="editCancel">Cancelar</button>
       <button class="btn" type="button" id="editApply">Guardar corrección</button>
     </div>
+  </div>
+</div>
+
+<div id="moneyModal" class="modal hidden">
+  <div class="modal-card money-card">
+    <h2 class="panel-title">Monto de venta</h2>
+    <p class="money-display" id="moneyDisplay">0.00</p>
+    <div class="numpad" id="numpad">
+      <button type="button" data-key="1">1</button>
+      <button type="button" data-key="2">2</button>
+      <button type="button" data-key="3">3</button>
+      <button type="button" data-key="4">4</button>
+      <button type="button" data-key="5">5</button>
+      <button type="button" data-key="6">6</button>
+      <button type="button" data-key="7">7</button>
+      <button type="button" data-key="8">8</button>
+      <button type="button" data-key="9">9</button>
+      <button type="button" data-key=".">.</button>
+      <button type="button" data-key="0">0</button>
+      <button type="button" data-key="back">⌫</button>
+    </div>
+    <button type="button" class="btn" id="moneyDone">Listo</button>
   </div>
 </div>
 
@@ -2045,22 +2068,19 @@ $("client").addEventListener("change",() => {
 
 $("amount").addEventListener("input",calculate);
 
-const numpad = document.createElement("div");
-numpad.id = "numpad";
-numpad.className = "numpad hidden";
-numpad.innerHTML = ["1","2","3","4","5","6","7","8","9",".","0","⌫"]
-  .map(key => `<button type="button" data-key="${key === "⌫" ? "back" : key}">${key}</button>`)
-  .join("");
 let moneyTarget = null;
-const showNumpad = input => {
-  moneyTarget = input;
-  const anchor = input.closest(".amount-row") || input;
-  anchor.insertAdjacentElement("afterend", numpad);
-  numpad.classList.remove("hidden");
+const paintMoney = () => {
+  const value = moneyTarget && moneyTarget.value ? moneyTarget.value : "0.00";
+  $("moneyDisplay").textContent = value;
 };
-const hideNumpad = () => {
+const openMoneyModal = input => {
+  moneyTarget = input;
+  paintMoney();
+  $("moneyModal").classList.remove("hidden");
+};
+const closeMoneyModal = () => {
+  $("moneyModal").classList.add("hidden");
   moneyTarget = null;
-  numpad.classList.add("hidden");
 };
 const writeMoney = key => {
   if (!moneyTarget) return;
@@ -2077,20 +2097,27 @@ const writeMoney = key => {
   }
   moneyTarget.value = value;
   moneyTarget.dispatchEvent(new Event("input", {bubbles:true}));
+  paintMoney();
 };
-numpad.addEventListener("pointerdown", event => event.preventDefault());
-numpad.addEventListener("pointerup", event => {
+$("numpad").addEventListener("click", event => {
   const key = event.target.closest("[data-key]");
   if (!key) return;
   writeMoney(key.dataset.key);
 });
-document.querySelectorAll("[data-money]").forEach(input => {
-  input.addEventListener("focus", () => showNumpad(input));
-  input.addEventListener("click", () => showNumpad(input));
+$("moneyDone").addEventListener("click", closeMoneyModal);
+$("moneyModal").addEventListener("click", event => {
+  if (event.target === $("moneyModal")) closeMoneyModal();
 });
-document.addEventListener("pointerdown", event => {
-  if (event.target.closest("#numpad") || event.target.closest("[data-money]")) return;
-  hideNumpad();
+const openSaleAmount = event => {
+  if (event.target.closest("#splitButton")) return;
+  event.preventDefault();
+  openMoneyModal($("amount"));
+};
+$("amount").addEventListener("click", openSaleAmount);
+$("amountLabel").addEventListener("click", openSaleAmount);
+document.querySelectorAll("[data-money]").forEach(input => {
+  if (input.id === "amount") return;
+  input.addEventListener("click", () => openMoneyModal(input));
 });
 $("splitButton").addEventListener("click",openSplitModal);
 $("splitCancel").addEventListener("click",closeSplitModal);
